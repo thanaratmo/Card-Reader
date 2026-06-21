@@ -187,9 +187,12 @@
     </main>
   </div>
 
-  <div class="toast hidden" id="toast">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5FD08A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"></path></svg>
-    <span id="toastMsg"></span>
+  <div class="toast-overlay hidden" id="toast">
+    <div class="toast-pop">
+      <svg class="toast-ico-ok" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5FD08A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"></path></svg>
+      <svg class="toast-ico-err" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF8B8B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+      <span id="toastMsg"></span>
+    </div>
   </div>
 
 </div>

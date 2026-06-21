@@ -343,6 +343,9 @@
     $('btnPrint').onclick=printReceipt;
     $('btnNew').onclick=newDoc;
 
+    // คลิกที่ popup เพื่อปิด
+    $('toast').onclick=function(){ this.classList.add('hidden'); };
+
     // slip upload
     $('slipDrop').onclick=function(){ $('slipInput').click(); };
     $('slipInput').onchange=function(){ handleSlipFile(this.files && this.files[0]); };
