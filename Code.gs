@@ -6,6 +6,7 @@
 var SHEET_ID   = '1x0WLlobQk7nx_Pf-iQhnC03jwnkH5sjdmdpxVRTl3Mk';
 var SHEET_NAME = 'ใบเสร็จ';
 var ALLOWED_DOMAIN = 'peoplesparty.or.th';
+var SLIP_FOLDER_ID = '1TU3rNtADOUPVSaK73nHifD4Kv1TH3J7T';  // โฟลเดอร์เก็บรูปสลิป
 
 // ------------------------------------------------------------
 // Access control
@@ -89,6 +90,24 @@ function saveRow(payload) {
   ensureHeader_(sheet);
 
   var now = new Date();
+
+  // ---- บันทึกรูปสลิปลง Drive (ตั้งชื่อไฟล์ = เลขบัตรประชาชน) ----
+  var blob = null, slipUrlCell = '', slipNote = '';
+  if (payload.slip) {
+    slipNote = 'แนบสลิปแล้ว';
+    try {
+      var b64  = String(payload.slip).replace(/^data:image\/\w+;base64,/, '');
+      var cid  = String(payload.receiverId || '').replace(/\D/g, '');
+      var fname = (cid || payload.docNo || 'slip') + '.jpg';
+      blob = Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', fname);
+      var folder = DriveApp.getFolderById(SLIP_FOLDER_ID);
+      var file   = folder.createFile(blob);
+      slipUrlCell = '=HYPERLINK("' + file.getUrl() + '","ดูสลิป")';
+    } catch (err) {
+      slipNote = 'แนบสลิป (อัปโหลด Drive ไม่สำเร็จ)';
+    }
+  }
+
   sheet.appendRow([
     now,
     payload.docNo        || '',
@@ -112,17 +131,15 @@ function saveRow(payload) {
     payload.signerName       || '',
     payload.signerPosition   || '',
     email,
-    payload.slip ? 'แนบสลิปแล้ว' : ''
+    slipNote,
+    slipUrlCell
   ]);
 
-  // ฝังรูปสลิปลงในชีต (เฉพาะเงินโอนที่แนบรูป)
-  if (payload.slip) {
+  // ฝัง thumbnail รูปสลิปลงในชีต (คอลัมน์ slip ของแถวนั้น)
+  if (blob) {
     try {
       var newRow  = sheet.getLastRow();
       var slipCol = HEADERS.indexOf('slip') + 1;
-      var b64     = String(payload.slip).replace(/^data:image\/\w+;base64,/, '');
-      var blob    = Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg',
-                                      (payload.docNo || 'slip') + '.jpg');
       var image   = sheet.insertImage(blob, slipCol, newRow);
       var w = Number(payload.slipW) || 0, h = Number(payload.slipH) || 0;
       var tw = 120;
@@ -130,7 +147,7 @@ function saveRow(payload) {
       image.setWidth(tw).setHeight(th);
       sheet.setRowHeight(newRow, Math.max(th + 8, 90));
     } catch (err) {
-      // ถ้าฝังรูปไม่สำเร็จ ก็ยังบันทึกข้อมูลแถวไว้ (cell ขึ้น 'แนบสลิปแล้ว')
+      // ถ้าฝัง thumbnail ไม่สำเร็จ ก็ยังมีลิงก์ Drive ใน slipUrl
     }
   }
 
@@ -172,7 +189,7 @@ var HEADERS = [
   'houseNo', 'moo', 'village', 'soi', 'road',
   'subdistrict', 'district', 'province', 'postal',
   'items', 'total', 'payMethod', 'membershipPeriod',
-  'signerName', 'signerPosition', 'savedBy', 'slip'
+  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl'
 ];
 
 function ensureHeader_(sheet) {
