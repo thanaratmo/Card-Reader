@@ -14,6 +14,7 @@
     membershipPeriod:'lifetime', payMethod:'cash',
     signerName:'', signerPosition:'เจ้าหน้าที่ทะเบียนพรรคประชาชน',
     items:[{desc:'ค่าบำรุงพรรคการเมือง (ตลอดชีพ)', amount:''}],
+    slip:{dataUrl:'', name:'', w:0, h:0},
     saving:false
   };
 
@@ -114,6 +115,9 @@
     document.querySelectorAll('#payChips .chip').forEach(function(b){
       b.classList.toggle('active', b.dataset.pay===state.payMethod);
     });
+
+    // แสดงช่องแนบสลิปเฉพาะเงินโอน
+    $('slipBox').classList.toggle('hidden', state.payMethod!=='transfer');
 
     renderQuick();
     renderItems();
@@ -227,7 +231,9 @@
       items:JSON.stringify(state.items),
       total:total(),
       payMethod:state.payMethod, membershipPeriod:state.membershipPeriod,
-      signerName:state.signerName, signerPosition:state.signerPosition
+      signerName:state.signerName, signerPosition:state.signerPosition,
+      slip:state.slip.dataUrl||'', slipName:state.slip.name||'',
+      slipW:state.slip.w||0, slipH:state.slip.h||0
     };
 
     google.script.run
@@ -255,11 +261,19 @@
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
     ['receiverName','receiverId','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    clearSlip();
     render();
     toast('เริ่มเอกสารใหม่');
   }
 
   function printReceipt(){
+    // เงินโอน: ต้องแนบสลิปก่อน
+    if(state.payMethod==='transfer' && !(state.slip && state.slip.dataUrl)){
+      toast('กรุณาแนบสลิปการโอนเงินก่อนพิมพ์', true);
+      var sb=$('slipBox'); sb.classList.remove('hidden');
+      sb.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
     var doPrint=function(){ setTimeout(function(){ window.print(); },120); };
     // บันทึกลง Sheet อัตโนมัติก่อนพิมพ์ (ข้ามถ้าข้อมูลชุดนี้บันทึกไปแล้ว หรือกำลังบันทึกอยู่)
     if(state.saving || state.lastSavedKey===currentKey()){
@@ -267,6 +281,39 @@
     } else {
       saveSheet(function(){ doPrint(); });
     }
+  }
+
+  // ---------- slip upload ----------
+  function handleSlipFile(file){
+    if(!file) return;
+    if(!/^image\//.test(file.type)){ toast('กรุณาเลือกไฟล์รูปภาพ', true); return; }
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var maxW=1200, scale=Math.min(1, maxW/img.width);
+        var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+        var c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        var dataUrl=c.toDataURL('image/jpeg',0.82);
+        state.slip={dataUrl:dataUrl, name:file.name, w:w, h:h};
+        $('slipThumb').src=dataUrl;
+        $('slipName').textContent=file.name;
+        $('slipPreview').classList.remove('hidden');
+        $('slipDrop').textContent='เปลี่ยนรูปสลิป';
+        state.lastSavedKey=null;   // มีสลิปใหม่ → ให้บันทึกใหม่ตอนพิมพ์
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearSlip(){
+    state.slip={dataUrl:'', name:'', w:0, h:0};
+    $('slipInput').value='';
+    $('slipThumb').src='';
+    $('slipPreview').classList.add('hidden');
+    $('slipDrop').textContent='📎 เลือกรูปสลิป';
   }
 
   // ---------- bind inputs ----------
@@ -295,6 +342,11 @@
 
     $('btnPrint').onclick=printReceipt;
     $('btnNew').onclick=newDoc;
+
+    // slip upload
+    $('slipDrop').onclick=function(){ $('slipInput').click(); };
+    $('slipInput').onchange=function(){ handleSlipFile(this.files && this.files[0]); };
+    $('slipRemove').onclick=clearSlip;
 
     // card reader — Phase 3 (Python agent @ localhost:8765)
     $('btnCard').onclick=readCard;

@@ -111,8 +111,28 @@ function saveRow(payload) {
     payload.membershipPeriod || '',
     payload.signerName       || '',
     payload.signerPosition   || '',
-    email
+    email,
+    payload.slip ? 'แนบสลิปแล้ว' : ''
   ]);
+
+  // ฝังรูปสลิปลงในชีต (เฉพาะเงินโอนที่แนบรูป)
+  if (payload.slip) {
+    try {
+      var newRow  = sheet.getLastRow();
+      var slipCol = HEADERS.indexOf('slip') + 1;
+      var b64     = String(payload.slip).replace(/^data:image\/\w+;base64,/, '');
+      var blob    = Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg',
+                                      (payload.docNo || 'slip') + '.jpg');
+      var image   = sheet.insertImage(blob, slipCol, newRow);
+      var w = Number(payload.slipW) || 0, h = Number(payload.slipH) || 0;
+      var tw = 120;
+      var th = (w > 0 && h > 0) ? Math.round(tw * h / w) : 120;
+      image.setWidth(tw).setHeight(th);
+      sheet.setRowHeight(newRow, Math.max(th + 8, 90));
+    } catch (err) {
+      // ถ้าฝังรูปไม่สำเร็จ ก็ยังบันทึกข้อมูลแถวไว้ (cell ขึ้น 'แนบสลิปแล้ว')
+    }
+  }
 
   return { ok: true, savedAt: now.toISOString() };
 }
@@ -152,7 +172,7 @@ var HEADERS = [
   'houseNo', 'moo', 'village', 'soi', 'road',
   'subdistrict', 'district', 'province', 'postal',
   'items', 'total', 'payMethod', 'membershipPeriod',
-  'signerName', 'signerPosition', 'savedBy'
+  'signerName', 'signerPosition', 'savedBy', 'slip'
 ];
 
 function ensureHeader_(sheet) {

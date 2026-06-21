@@ -102,6 +102,20 @@
             <button class="chip" data-pay="cash">เงินสด</button>
             <button class="chip" data-pay="transfer">เงินโอน</button>
           </div>
+
+          <!-- SLIP UPLOAD (เฉพาะเงินโอน) -->
+          <div id="slipBox" class="slip-box hidden">
+            <label class="fld" style="margin-top:14px">แนบสลิปการโอนเงิน <span style="color:#C0504D">*จำเป็น</span></label>
+            <input type="file" id="slipInput" accept="image/*" style="display:none">
+            <button type="button" class="slip-drop" id="slipDrop">📎 เลือกรูปสลิป</button>
+            <div id="slipPreview" class="slip-preview hidden">
+              <img id="slipThumb" alt="สลิป">
+              <div class="slip-meta">
+                <span id="slipName"></span>
+                <button type="button" id="slipRemove">ลบ</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- ITEMS -->
