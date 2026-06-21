@@ -86,16 +86,7 @@ function getNextDocNo() {
 function saveRow(payload) {
   var email = checkAccess_();
   var sheet = getSheet_();
-
-  // สร้าง header ถ้ายังไม่มี
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow([
-      'timestamp', 'docNo', 'bookNo', 'date',
-      'receiverName', 'receiverId', 'address',
-      'items', 'total', 'payMethod', 'membershipPeriod',
-      'signerName', 'signerPosition', 'savedBy'
-    ]);
-  }
+  ensureHeader_(sheet);
 
   var now = new Date();
   sheet.appendRow([
@@ -105,7 +96,15 @@ function saveRow(payload) {
     payload.date         || '',
     payload.receiverName || '',
     payload.receiverId   || '',
-    payload.address      || '',
+    payload.houseNo      || '',
+    payload.moo          || '',
+    payload.village      || '',
+    payload.soi          || '',
+    payload.road         || '',
+    payload.subdistrict  || '',
+    payload.district     || '',
+    payload.province     || '',
+    payload.postal       || '',
     typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []),
     Number(payload.total) || 0,
     payload.payMethod        || '',
@@ -129,7 +128,7 @@ function getRecentRows(n) {
 
   n = Math.min(n || 8, lastRow - 1);
   var startRow = lastRow - n + 1;
-  var numCols  = 14;
+  var numCols  = HEADERS.length;
   var range    = sheet.getRange(startRow, 1, n, numCols);
   var values   = range.getValues();
 
@@ -138,25 +137,45 @@ function getRecentRows(n) {
     return {
       timestamp:        row[0]  ? Utilities.formatDate(new Date(row[0]), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm') : '',
       docNo:            row[1]  || '',
-      bookNo:           row[2]  || '',
-      date:             row[3]  || '',
       receiverName:     row[4]  || '',
-      receiverId:       row[5]  || '',
-      address:          row[6]  || '',
-      items:            row[7]  || '[]',
-      total:            row[8]  || 0,
-      payMethod:        row[9]  || '',
-      membershipPeriod: row[10] || '',
-      signerName:       row[11] || '',
-      signerPosition:   row[12] || '',
-      savedBy:          row[13] || ''
+      total:            row[16] || 0
     };
   });
 }
 
 // ------------------------------------------------------------
-// helper
+// header / sheet helpers
 // ------------------------------------------------------------
+var HEADERS = [
+  'timestamp', 'docNo', 'bookNo', 'date',
+  'receiverName', 'receiverId',
+  'houseNo', 'moo', 'village', 'soi', 'road',
+  'subdistrict', 'district', 'province', 'postal',
+  'items', 'total', 'payMethod', 'membershipPeriod',
+  'signerName', 'signerPosition', 'savedBy'
+];
+
+function ensureHeader_(sheet) {
+  // เขียน/แก้แถวหัวตารางให้ตรงกับ HEADERS เสมอ
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    return;
+  }
+  var current = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  var same = current.length === HEADERS.length && HEADERS.every(function(h, i) { return current[i] === h; });
+  if (!same) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  }
+}
+
+// รันครั้งเดียวจาก editor เพื่อ "ล้างข้อมูลทดสอบเก่า + ตั้งหัวคอลัมน์ใหม่"
+function setupSheet() {
+  var sheet = getSheet_();
+  sheet.clear();
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  return 'reset done — ' + HEADERS.length + ' columns';
+}
+
 function getSheet_() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   var sheet = ss.getSheetByName(SHEET_NAME);

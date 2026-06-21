@@ -71,7 +71,15 @@
           <label class="fld">เลขประจำตัวประชาชน</label>
           <input class="in mb" id="receiverId" inputmode="numeric" placeholder="x-xxxx-xxxxx-xx-x" style="letter-spacing:.04em">
           <label class="fld">ที่อยู่ตามทะเบียนบ้าน</label>
-          <input class="in sm mb9" id="addrLine1" placeholder="บ้านเลขที่ หมู่ หมู่บ้าน ซอย ถนน">
+          <div class="row mb9">
+            <input class="in sm" id="addrHouseNo" placeholder="เลขที่บ้าน" style="flex:1">
+            <input class="in sm" id="addrMoo" placeholder="หมู่" style="width:90px;flex:none">
+          </div>
+          <input class="in sm mb9" id="addrVillage" placeholder="หมู่บ้าน/อาคาร">
+          <div class="row mb9">
+            <input class="in sm" id="addrSoi" placeholder="ซอย" style="flex:1">
+            <input class="in sm" id="addrRoad" placeholder="ถนน" style="flex:1">
+          </div>
           <div class="row mb9">
             <input class="in sm" id="addrSub" placeholder="ตำบล/แขวง" style="flex:1">
             <input class="in sm" id="addrDistrict" placeholder="อำเภอ/เขต" style="flex:1">

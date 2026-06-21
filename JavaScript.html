@@ -10,7 +10,7 @@
   var state = {
     bookNo:'1', docNo:'', date: todayISO(),
     receiverName:'', receiverId:'',
-    addr:{line1:'', subdistrict:'', district:'', province:'', postal:''},
+    addr:{houseNo:'', moo:'', village:'', soi:'', road:'', subdistrict:'', district:'', province:'', postal:''},
     membershipPeriod:'lifetime', payMethod:'cash',
     signerName:'', signerPosition:'เจ้าหน้าที่ทะเบียนพรรคประชาชน',
     items:[{desc:'ค่าบำรุงพรรคการเมือง (ตลอดชีพ)', amount:''}],
@@ -64,11 +64,15 @@
   function buildAddr(a){
     var isBKK=(a.province||'').trim()==='กรุงเทพมหานคร';
     var segs=[];
-    if(a.line1) segs.push(a.line1);
+    if(a.houseNo) segs.push('บ้านเลขที่ '+a.houseNo);
+    if(a.moo)     segs.push('หมู่ '+a.moo);
+    if(a.village) segs.push(a.village);
+    if(a.soi)     segs.push('ซอย '+a.soi);
+    if(a.road)    segs.push('ถนน '+a.road);
     if(a.subdistrict) segs.push((isBKK?'แขวง':'ต.')+a.subdistrict);
-    if(a.district) segs.push((isBKK?'เขต':'อ.')+a.district);
-    if(a.province) segs.push(isBKK?a.province:'จ.'+a.province);
-    if(a.postal) segs.push(a.postal);
+    if(a.district)    segs.push((isBKK?'เขต':'อ.')+a.district);
+    if(a.province)    segs.push(isBKK?a.province:'จ.'+a.province);
+    if(a.postal)      segs.push(a.postal);
     return segs.join(' ');
   }
 
@@ -213,10 +217,12 @@
     if(state.saving){ return; }
     state.saving=true;
 
+    var a=state.addr;
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
       receiverName:state.receiverName, receiverId:state.receiverId,
-      address:buildAddr(state.addr),
+      houseNo:a.houseNo, moo:a.moo, village:a.village, soi:a.soi, road:a.road,
+      subdistrict:a.subdistrict, district:a.district, province:a.province, postal:a.postal,
       items:JSON.stringify(state.items),
       total:total(),
       payMethod:state.payMethod, membershipPeriod:state.membershipPeriod,
@@ -245,9 +251,9 @@
       .withFailureHandler(function(){ /* keep old */ })
       .getNextDocNo();
     state.receiverName=''; state.receiverId='';
-    state.addr={line1:'',subdistrict:'',district:'',province:'',postal:''};
+    state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
-    ['receiverName','receiverId','addrLine1','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    ['receiverName','receiverId','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
     render();
     toast('เริ่มเอกสารใหม่');
   }
@@ -272,7 +278,7 @@
       var v=this.value.replace(/\D/g,'').slice(0,13);
       this.value=v; state.receiverId=v; $('rId').textContent=v||'..........................';
     };
-    var addrMap={addrLine1:'line1',addrSub:'subdistrict',addrDistrict:'district',addrProvince:'province',addrPostal:'postal'};
+    var addrMap={addrHouseNo:'houseNo',addrMoo:'moo',addrVillage:'village',addrSoi:'soi',addrRoad:'road',addrSub:'subdistrict',addrDistrict:'district',addrProvince:'province',addrPostal:'postal'};
     Object.keys(addrMap).forEach(function(id){
       $(id).oninput=function(){ state.addr[addrMap[id]]=this.value; $('rAddr').textContent=buildAddr(state.addr)||'..........................................................................'; };
     });
@@ -343,7 +349,11 @@
     state.receiverId   = (d.cid||'').replace(/\D/g,'').slice(0,13);
     var a = d.address || {};
     state.addr = {
-      line1:       a.line1       || '',
+      houseNo:     a.houseNo     || '',
+      moo:         a.moo         || '',
+      village:     a.village     || '',
+      soi:         a.soi         || '',
+      road:        a.road        || '',
       subdistrict: a.subdistrict || '',
       district:    a.district    || '',
       province:    a.province    || '',
@@ -352,7 +362,11 @@
     // sync DOM inputs
     $('receiverName').value = state.receiverName;
     $('receiverId').value   = state.receiverId;
-    $('addrLine1').value    = state.addr.line1;
+    $('addrHouseNo').value  = state.addr.houseNo;
+    $('addrMoo').value      = state.addr.moo;
+    $('addrVillage').value  = state.addr.village;
+    $('addrSoi').value      = state.addr.soi;
+    $('addrRoad').value     = state.addr.road;
     $('addrSub').value      = state.addr.subdistrict;
     $('addrDistrict').value = state.addr.district;
     $('addrProvince').value = state.addr.province;

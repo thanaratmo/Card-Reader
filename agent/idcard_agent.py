@@ -95,15 +95,17 @@ def parse_address(raw):
     house, moo, trok, soi, road = g(0), g(1), g(2), g(3), g(4)
     tambon, amphoe, changwat = g(5), g(6), g(7)
 
-    line1_segs = []
-    if house: line1_segs.append('บ้านเลขที่ ' + house)
-    if moo:   line1_segs.append('หมู่ ' + moo)
-    if trok:  line1_segs.append(trok)
-    if soi:   line1_segs.append(soi)
-    if road:  line1_segs.append(road)
+    # ตรอก (trok) ไม่มีช่องแยก — รวมเข้าซอยถ้าซอยว่าง
+    soi_val = strip_prefix(soi, ['ซอย', 'ซ.'])
+    if not soi_val:
+        soi_val = strip_prefix(trok, ['ตรอก'])
 
     return {
-        'line1':       ' '.join(line1_segs),
+        'houseNo':     strip_prefix(house, ['บ้านเลขที่', 'เลขที่']),
+        'moo':         strip_prefix(moo, ['หมู่ที่', 'หมู่', 'ม.']),
+        'village':     '',  # ไม่มีช่องแยกบนบัตร
+        'soi':         soi_val,
+        'road':        strip_prefix(road, ['ถนน', 'ถ.']),
         'subdistrict': strip_prefix(tambon, ['ตำบล', 'แขวง', 'ต.']),
         'district':    strip_prefix(amphoe, ['อำเภอ', 'เขต', 'อ.']),
         'province':    strip_prefix(changwat, ['จังหวัด', 'จ.']),
