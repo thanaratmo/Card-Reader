@@ -276,10 +276,75 @@
     $('btnPrint').onclick=printReceipt;
     $('btnNew').onclick=newDoc;
 
-    // card reader — Phase 3 (ยังไม่เปิด)
-    $('btnCard').onclick=function(){
-      $('cardHint').textContent='ฟังก์ชันอ่านบัตรจะเปิดใช้ใน Phase 3 — กรอกข้อมูลด้วยตนเองได้เลย';
+    // card reader — Phase 3 (Python agent @ localhost:8765)
+    $('btnCard').onclick=readCard;
+  }
+
+  // ---------- card reader ----------
+  var AGENT_URL='http://127.0.0.1:8765';
+  var cardReading=false;
+
+  function setCardHint(text, cls){
+    var h=$('cardHint'); h.textContent=text;
+    h.className='hint'+(cls?(' '+cls):'');
+  }
+
+  function readCard(){
+    if(cardReading) return;
+    cardReading=true;
+    var btn=$('btnCard'); btn.disabled=true; btn.textContent='กำลังอ่านบัตร…';
+    setCardHint('กำลังอ่านข้อมูลจากชิปบัตร…','reading');
+
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ ctrl.abort(); }, 15000);
+
+    fetch(AGENT_URL+'/read', {signal:ctrl.signal})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        clearTimeout(timer);
+        if(res && res.ok && res.data){
+          applyCardData(res.data);
+          setCardHint('✓ อ่านบัตรสำเร็จ — เติมข้อมูลให้แล้ว','done');
+          btn.textContent='อ่านบัตรอีกครั้ง';
+          toast('อ่านบัตรประชาชนสำเร็จ');
+        } else {
+          setCardHint((res && res.error) ? res.error : 'อ่านบัตรไม่สำเร็จ','reading');
+          btn.textContent='เสียบบัตรเพื่ออ่านข้อมูล';
+          toast('อ่านบัตรไม่สำเร็จ', true);
+        }
+      })
+      .catch(function(err){
+        clearTimeout(timer);
+        var aborted = err && err.name==='AbortError';
+        setCardHint(aborted
+          ? 'หมดเวลา — ตรวจสอบว่าเสียบบัตรแล้ว'
+          : 'เชื่อมต่อโปรแกรมอ่านบัตรไม่ได้ — เปิด start-agent.bat ก่อน', 'reading');
+        btn.textContent='เสียบบัตรเพื่ออ่านข้อมูล';
+        toast(aborted ? 'หมดเวลาอ่านบัตร' : 'ยังไม่ได้เปิดโปรแกรม agent อ่านบัตร', true);
+      })
+      .then(function(){ cardReading=false; btn.disabled=false; });
+  }
+
+  function applyCardData(d){
+    state.receiverName = d.fullName || '';
+    state.receiverId   = (d.cid||'').replace(/\D/g,'').slice(0,13);
+    var a = d.address || {};
+    state.addr = {
+      line1:       a.line1       || '',
+      subdistrict: a.subdistrict || '',
+      district:    a.district    || '',
+      province:    a.province    || '',
+      postal:      a.postal      || ''
     };
+    // sync DOM inputs
+    $('receiverName').value = state.receiverName;
+    $('receiverId').value   = state.receiverId;
+    $('addrLine1').value    = state.addr.line1;
+    $('addrSub').value      = state.addr.subdistrict;
+    $('addrDistrict').value = state.addr.district;
+    $('addrProvince').value = state.addr.province;
+    $('addrPostal').value   = state.addr.postal;
+    render();
   }
 
   // ---------- init ----------
