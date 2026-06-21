@@ -208,9 +208,23 @@ function ensureHeader_(sheet) {
 // รันครั้งเดียวจาก editor เพื่อ "ล้างข้อมูลทดสอบเก่า + ตั้งหัวคอลัมน์ใหม่"
 function setupSheet() {
   var sheet = getSheet_();
+  removeImages_(sheet);
   sheet.clear();
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   return 'reset done — ' + HEADERS.length + ' columns';
+}
+
+// รันจาก editor เพื่อ "ลบรูปสลิปที่ฝังในชีตทั้งหมด" (เช่น รูปทดสอบ)
+function clearSlipImages() {
+  var sheet = getSheet_();
+  var n = removeImages_(sheet);
+  return 'removed ' + n + ' images';
+}
+
+function removeImages_(sheet) {
+  var imgs = sheet.getImages();
+  imgs.forEach(function (im) { im.remove(); });
+  return imgs.length;
 }
 
 function getSheet_() {
