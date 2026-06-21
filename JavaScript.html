@@ -313,7 +313,7 @@
     $('slipInput').value='';
     $('slipThumb').src='';
     $('slipPreview').classList.add('hidden');
-    $('slipDrop').textContent='📎 เลือกรูปสลิป';
+    $('slipDrop').textContent='📎 ลากรูปมาวางที่นี่ หรือคลิกเลือก';
   }
 
   // ---------- bind inputs ----------
@@ -347,9 +347,26 @@
     $('toast').onclick=function(){ this.classList.add('hidden'); };
 
     // slip upload
-    $('slipDrop').onclick=function(){ $('slipInput').click(); };
+    var sd=$('slipDrop');
+    sd.onclick=function(){ $('slipInput').click(); };
     $('slipInput').onchange=function(){ handleSlipFile(this.files && this.files[0]); };
     $('slipRemove').onclick=clearSlip;
+
+    // drag & drop รูปสลิป
+    ['dragenter','dragover'].forEach(function(ev){
+      sd.addEventListener(ev,function(e){ e.preventDefault(); e.stopPropagation(); sd.classList.add('dragover'); });
+    });
+    ['dragleave','dragend','drop'].forEach(function(ev){
+      sd.addEventListener(ev,function(e){ e.preventDefault(); e.stopPropagation(); sd.classList.remove('dragover'); });
+    });
+    sd.addEventListener('drop',function(e){
+      var dt=e.dataTransfer;
+      if(dt && dt.files && dt.files[0]) handleSlipFile(dt.files[0]);
+    });
+    // กันเบราว์เซอร์เปิดรูปแทนถ้าวางพลาดนอกกรอบ
+    ['dragover','drop'].forEach(function(ev){
+      window.addEventListener(ev,function(e){ e.preventDefault(); });
+    });
 
     // card reader — Phase 3 (Python agent @ localhost:8765)
     $('btnCard').onclick=readCard;
