@@ -286,7 +286,6 @@
       b.onclick=function(){ state.payMethod=b.dataset.pay; render(); };
     });
 
-    $('btnAddRow').onclick=function(){ state.items.push({desc:'',amount:''}); renderItems(); };
     $('btnPrint').onclick=printReceipt;
     $('btnNew').onclick=newDoc;
 
