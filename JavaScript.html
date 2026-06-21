@@ -186,6 +186,7 @@
   // ---------- history ----------
   function renderHistory(rows){
     var box=$('historyList');
+    if(!box) return;   // ถ้าไม่มีส่วนแสดงประวัติ
     if(!rows || !rows.length){
       box.innerHTML='<p class="empty">ยังไม่มีรายการ — กด "บันทึกลง Sheet" เพื่อจัดเก็บ</p>';
       return;
