@@ -212,7 +212,6 @@
   function saveSheet(onDone){
     if(state.saving){ return; }
     state.saving=true;
-    var btn=$('btnSave'); btn.disabled=true; $('btnSaveLabel').textContent='กำลังบันทึก…';
 
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
@@ -226,14 +225,14 @@
 
     google.script.run
       .withSuccessHandler(function(){
-        state.saving=false; btn.disabled=false; $('btnSaveLabel').textContent='บันทึกลง Sheet';
+        state.saving=false;
         state.lastSavedKey=currentKey();
         toast('บันทึกลง Google Sheet เรียบร้อย');
         google.script.run.withSuccessHandler(renderHistory).getRecentRows(8);
         if(typeof onDone==='function') onDone(true);
       })
       .withFailureHandler(function(err){
-        state.saving=false; btn.disabled=false; $('btnSaveLabel').textContent='บันทึกลง Sheet';
+        state.saving=false;
         toast('บันทึกไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
         if(typeof onDone==='function') onDone(false);
       })
@@ -288,7 +287,6 @@
     });
 
     $('btnAddRow').onclick=function(){ state.items.push({desc:'',amount:''}); renderItems(); };
-    $('btnSave').onclick=saveSheet;
     $('btnPrint').onclick=printReceipt;
     $('btnNew').onclick=newDoc;
 
