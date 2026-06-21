@@ -204,8 +204,13 @@
   }
 
   // ---------- actions ----------
-  function saveSheet(){
-    if(state.saving) return;
+  // ลายเซ็นของเอกสารปัจจุบัน — ใช้กันบันทึกซ้ำ
+  function currentKey(){
+    return [state.docNo, state.receiverName, total(), JSON.stringify(state.items)].join('|');
+  }
+
+  function saveSheet(onDone){
+    if(state.saving){ return; }
     state.saving=true;
     var btn=$('btnSave'); btn.disabled=true; $('btnSaveLabel').textContent='กำลังบันทึก…';
 
@@ -222,12 +227,15 @@
     google.script.run
       .withSuccessHandler(function(){
         state.saving=false; btn.disabled=false; $('btnSaveLabel').textContent='บันทึกลง Sheet';
+        state.lastSavedKey=currentKey();
         toast('บันทึกลง Google Sheet เรียบร้อย');
         google.script.run.withSuccessHandler(renderHistory).getRecentRows(8);
+        if(typeof onDone==='function') onDone(true);
       })
       .withFailureHandler(function(err){
         state.saving=false; btn.disabled=false; $('btnSaveLabel').textContent='บันทึกลง Sheet';
         toast('บันทึกไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
+        if(typeof onDone==='function') onDone(false);
       })
       .saveRow(payload);
   }
@@ -245,7 +253,15 @@
     toast('เริ่มเอกสารใหม่');
   }
 
-  function printReceipt(){ setTimeout(function(){ window.print(); },30); }
+  function printReceipt(){
+    var doPrint=function(){ setTimeout(function(){ window.print(); },120); };
+    // บันทึกลง Sheet อัตโนมัติก่อนพิมพ์ (ข้ามถ้าข้อมูลชุดนี้บันทึกไปแล้ว หรือกำลังบันทึกอยู่)
+    if(state.saving || state.lastSavedKey===currentKey()){
+      doPrint();
+    } else {
+      saveSheet(function(){ doPrint(); });
+    }
+  }
 
   // ---------- bind inputs ----------
   function bind(){
