@@ -1,0 +1,320 @@
+<script>
+(function(){
+  'use strict';
+
+  // ---------- state ----------
+  var thMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  var state = {
+    bookNo:'1', docNo:'', date: todayISO(),
+    receiverName:'', receiverId:'',
+    addr:{line1:'', subdistrict:'', district:'', province:'', postal:''},
+    membershipPeriod:'lifetime', payMethod:'cash',
+    signerName:'', signerPosition:'นายทะเบียนสมาชิกพรรคประชาชน',
+    items:[{desc:'ค่าบำรุงพรรคการเมือง (ตลอดชีพ)', amount:''}],
+    saving:false
+  };
+
+  // ---------- formatters ----------
+  function fmt(n){ var v=Number(n)||0; return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function formatId(raw){
+    var d=String(raw||'').replace(/\D/g,'').slice(0,13);
+    if(!d) return '';
+    return [d.slice(0,1),d.slice(1,5),d.slice(5,10),d.slice(10,12),d.slice(12,13)].filter(Boolean).join('-');
+  }
+  function thaiDate(iso){
+    if(!iso) return '';
+    var p=iso.split('-'); if(p.length<3) return iso;
+    return (+p[2])+' '+thMonths[(+p[1])-1]+' '+((+p[0])+543);
+  }
+  function total(){ return state.items.reduce(function(s,it){ return s+(Number(it.amount)||0); },0); }
+
+  function readNumber(numStr){
+    var n=parseInt(numStr,10); if(!n) return '';
+    var num=['','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'];
+    var unit=['','สิบ','ร้อย','พัน','หมื่น','แสน'];
+    var str=String(n);
+    if(str.length>6){
+      var head=str.slice(0,str.length-6), tail=str.slice(str.length-6);
+      return readNumber(head)+'ล้าน'+readNumber(tail);
+    }
+    var r='';
+    for(var i=0;i<str.length;i++){
+      var dg=parseInt(str[i],10), pos=str.length-i-1;
+      if(dg===0) continue;
+      if(pos===1 && dg===1) r+='สิบ';
+      else if(pos===1 && dg===2) r+='ยี่สิบ';
+      else if(pos===0 && dg===1 && str.length>1) r+='เอ็ด';
+      else r+=num[dg]+unit[pos];
+    }
+    return r;
+  }
+  function bahtText(amount){
+    var v=Number(amount); if(isNaN(v)) return '';
+    if(v===0) return 'ศูนย์บาทถ้วน';
+    var fixed=v.toFixed(2).split('.');
+    var baht=readNumber(fixed[0]);
+    var sat=parseInt(fixed[1],10);
+    var out=baht?baht+'บาท':'';
+    if(sat===0) out+='ถ้วน'; else out+=readNumber(fixed[1])+'สตางค์';
+    return out;
+  }
+  function buildAddr(a){
+    var isBKK=(a.province||'').trim()==='กรุงเทพมหานคร';
+    var segs=[];
+    if(a.line1) segs.push(a.line1);
+    if(a.subdistrict) segs.push((isBKK?'แขวง':'ต.')+a.subdistrict);
+    if(a.district) segs.push((isBKK?'เขต':'อ.')+a.district);
+    if(a.province) segs.push(isBKK?a.province:'จ.'+a.province);
+    if(a.postal) segs.push(a.postal);
+    return segs.join(' ');
+  }
+
+  // ---------- dom helpers ----------
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---------- render ----------
+  function render(){
+    var t=total();
+
+    // receipt preview
+    $('rBookNo').textContent = state.bookNo;
+    $('rDocNo').textContent  = state.docNo;
+    $('rDate').textContent   = thaiDate(state.date);
+    $('rName').textContent   = state.receiverName || '..........................................';
+    $('rId').textContent     = state.receiverId || '..........................';
+    $('rAddr').textContent   = buildAddr(state.addr) || '..........................................................................';
+    $('rPay').textContent    = state.payMethod==='cash' ? 'เงินสด' : 'เงินโอนธนาคาร';
+    $('rTotal').textContent  = fmt(t);
+    $('rTotalText').textContent = bahtText(t);
+    $('rSigner').textContent = state.signerName;
+    $('rSignerPos').textContent = state.signerPosition;
+
+    // receipt items
+    var ri = state.items.map(function(it){
+      var d=(it.desc||'—');
+      return '<div class="item"><span class="d">'+escapeHtml(d)+'</span><span class="a">'+fmt(it.amount)+'</span></div>';
+    }).join('');
+    $('rItems').innerHTML = ri;
+
+    // form total
+    $('totalFmt').textContent  = fmt(t);
+    $('totalText').textContent = '('+bahtText(t)+')';
+
+    // chips
+    document.querySelectorAll('#periodChips .chip').forEach(function(b){
+      b.classList.toggle('active', b.dataset.period===state.membershipPeriod);
+    });
+    document.querySelectorAll('#payChips .chip').forEach(function(b){
+      b.classList.toggle('active', b.dataset.pay===state.payMethod);
+    });
+
+    renderQuick();
+    renderItems();
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function renderQuick(){
+    var amounts, desc;
+    if(state.membershipPeriod==='yearly'){ amounts=[50,150]; desc='ค่าบำรุงพรรคการเมือง (รายปี)'; }
+    else { amounts=[500,4999]; desc='ค่าบำรุงพรรคการเมือง (ตลอดชีพ)'; }
+    var box=$('quickBtns'); box.innerHTML='';
+    amounts.forEach(function(a){
+      var btn=document.createElement('button');
+      btn.textContent=a.toLocaleString('en-US');
+      btn.onclick=function(){
+        state.items=[{desc:desc, amount:String(a)}];
+        render();
+      };
+      box.appendChild(btn);
+    });
+  }
+
+  function renderItems(){
+    var list=$('itemList'); list.innerHTML='';
+    state.items.forEach(function(it,i){
+      var row=document.createElement('div'); row.className='item-row';
+
+      var d=document.createElement('input');
+      d.className='in sm desc'; d.placeholder='รายละเอียดการจ่าย'; d.value=it.desc||'';
+      d.oninput=function(){ state.items[i].desc=d.value; updateReceiptOnly(); };
+
+      var a=document.createElement('input');
+      a.className='in sm amt'; a.placeholder='0.00'; a.inputMode='decimal'; a.value=it.amount||'';
+      a.oninput=function(){ state.items[i].amount=a.value.replace(/[^0-9.]/g,''); updateTotalsOnly(); };
+
+      row.appendChild(d); row.appendChild(a);
+
+      if(state.items.length>1){
+        var del=document.createElement('button');
+        del.className='del'; del.innerHTML='&times;'; del.title='ลบรายการ';
+        del.onclick=function(){ state.items.splice(i,1); render(); };
+        row.appendChild(del);
+      }
+      list.appendChild(row);
+    });
+  }
+
+  // อัปเดตเฉพาะ preview ไม่ re-render input (กันโฟกัสหลุด)
+  function updateReceiptOnly(){
+    var ri = state.items.map(function(it){
+      var d=(it.desc||'—');
+      return '<div class="item"><span class="d">'+escapeHtml(d)+'</span><span class="a">'+fmt(it.amount)+'</span></div>';
+    }).join('');
+    $('rItems').innerHTML = ri;
+  }
+  function updateTotalsOnly(){
+    var t=total();
+    $('totalFmt').textContent=fmt(t);
+    $('totalText').textContent='('+bahtText(t)+')';
+    $('rTotal').textContent=fmt(t);
+    $('rTotalText').textContent=bahtText(t);
+    updateReceiptOnly();
+  }
+
+  // ---------- history ----------
+  function renderHistory(rows){
+    var box=$('historyList');
+    if(!rows || !rows.length){
+      box.innerHTML='<p class="empty">ยังไม่มีรายการ — กด "บันทึกลง Sheet" เพื่อจัดเก็บ</p>';
+      return;
+    }
+    box.innerHTML = rows.map(function(r){
+      return '<div class="hist-row"><div><div class="doc">'+escapeHtml(r.docNo)+'</div>'+
+             '<div class="meta">'+escapeHtml(r.receiverName||'(ไม่ระบุชื่อ)')+' · '+escapeHtml(r.timestamp)+'</div></div>'+
+             '<div class="amt">'+fmt(r.total)+'</div></div>';
+    }).join('');
+  }
+
+  // ---------- toast ----------
+  var toastTimer;
+  function toast(msg, isErr){
+    var el=$('toast'); $('toastMsg').textContent=msg;
+    el.classList.toggle('err', !!isErr);
+    el.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ el.classList.add('hidden'); }, 2800);
+  }
+
+  // ---------- actions ----------
+  function saveSheet(){
+    if(state.saving) return;
+    state.saving=true;
+    var btn=$('btnSave'); btn.disabled=true; $('btnSaveLabel').textContent='กำลังบันทึก…';
+
+    var payload={
+      docNo:state.docNo, bookNo:state.bookNo, date:state.date,
+      receiverName:state.receiverName, receiverId:state.receiverId,
+      address:buildAddr(state.addr),
+      items:JSON.stringify(state.items),
+      total:total(),
+      payMethod:state.payMethod, membershipPeriod:state.membershipPeriod,
+      signerName:state.signerName, signerPosition:state.signerPosition
+    };
+
+    google.script.run
+      .withSuccessHandler(function(){
+        state.saving=false; btn.disabled=false; $('btnSaveLabel').textContent='บันทึกลง Sheet';
+        toast('บันทึกลง Google Sheet เรียบร้อย');
+        google.script.run.withSuccessHandler(renderHistory).getRecentRows(8);
+      })
+      .withFailureHandler(function(err){
+        state.saving=false; btn.disabled=false; $('btnSaveLabel').textContent='บันทึกลง Sheet';
+        toast('บันทึกไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
+      })
+      .saveRow(payload);
+  }
+
+  function newDoc(){
+    google.script.run
+      .withSuccessHandler(function(docNo){ state.docNo=docNo; $('docNo').value=docNo; })
+      .withFailureHandler(function(){ /* keep old */ })
+      .getNextDocNo();
+    state.receiverName=''; state.receiverId='';
+    state.addr={line1:'',subdistrict:'',district:'',province:'',postal:''};
+    state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
+    ['receiverName','receiverId','addrLine1','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    render();
+    toast('เริ่มเอกสารใหม่');
+  }
+
+  function printReceipt(){ setTimeout(function(){ window.print(); },30); }
+
+  // ---------- bind inputs ----------
+  function bind(){
+    $('bookNo').oninput=function(){ state.bookNo=this.value; $('rBookNo').textContent=this.value; };
+    $('docNo').oninput =function(){ state.docNo=this.value; $('rDocNo').textContent=this.value; };
+    $('date').oninput  =function(){ state.date=this.value; $('rDate').textContent=thaiDate(this.value); };
+    $('receiverName').oninput=function(){ state.receiverName=this.value; $('rName').textContent=this.value||'..........................................'; };
+    $('receiverId').oninput=function(){
+      var v=this.value.replace(/\D/g,'').slice(0,13);
+      this.value=v; state.receiverId=v; $('rId').textContent=v||'..........................';
+    };
+    var addrMap={addrLine1:'line1',addrSub:'subdistrict',addrDistrict:'district',addrProvince:'province',addrPostal:'postal'};
+    Object.keys(addrMap).forEach(function(id){
+      $(id).oninput=function(){ state.addr[addrMap[id]]=this.value; $('rAddr').textContent=buildAddr(state.addr)||'..........................................................................'; };
+    });
+    $('signerName').oninput=function(){ state.signerName=this.value; $('rSigner').textContent=this.value; };
+    $('signerPosition').oninput=function(){ state.signerPosition=this.value; $('rSignerPos').textContent=this.value; };
+
+    document.querySelectorAll('#periodChips .chip').forEach(function(b){
+      b.onclick=function(){ state.membershipPeriod=b.dataset.period; render(); };
+    });
+    document.querySelectorAll('#payChips .chip').forEach(function(b){
+      b.onclick=function(){ state.payMethod=b.dataset.pay; render(); };
+    });
+
+    $('btnAddRow').onclick=function(){ state.items.push({desc:'',amount:''}); renderItems(); };
+    $('btnSave').onclick=saveSheet;
+    $('btnPrint').onclick=printReceipt;
+    $('btnNew').onclick=newDoc;
+
+    // card reader — Phase 3 (ยังไม่เปิด)
+    $('btnCard').onclick=function(){
+      $('cardHint').textContent='ฟังก์ชันอ่านบัตรจะเปิดใช้ใน Phase 3 — กรอกข้อมูลด้วยตนเองได้เลย';
+    };
+  }
+
+  // ---------- init ----------
+  function fillForm(){
+    $('bookNo').value=state.bookNo;
+    $('docNo').value=state.docNo;
+    $('date').value=state.date;
+    $('signerPosition').value=state.signerPosition;
+    var items=$('itemList');
+  }
+
+  function init(){
+    // logo
+    if(window.LOGO_SRC){ $('brandLogo').src=window.LOGO_SRC; $('receiptLogo').src=window.LOGO_SRC; }
+    fillForm();
+    bind();
+    render();
+
+    // โหลดข้อมูลเริ่มต้นจาก backend (เลขเอกสารถัดไป + ประวัติ)
+    google.script.run
+      .withSuccessHandler(function(data){
+        if(data){
+          if(data.nextDocNo){ state.docNo=data.nextDocNo; $('docNo').value=data.nextDocNo; $('rDocNo').textContent=data.nextDocNo; }
+          if(data.today){ state.date=data.today; $('date').value=data.today; $('rDate').textContent=thaiDate(data.today); }
+          renderHistory(data.recent);
+        }
+      })
+      .withFailureHandler(function(err){
+        toast('โหลดข้อมูลเริ่มต้นไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
+        renderHistory([]);
+      })
+      .getInitData();
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>

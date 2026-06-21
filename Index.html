@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base target="_top">
+  <?!= include('Fonts'); ?>
+  <?!= include('Stylesheet'); ?>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <img id="brandLogo" alt="พรรคประชาชน">
+      <div class="divider"></div>
+      <div>
+        <div class="title">ระบบออกใบสำคัญรับเงินชั่วคราว</div>
+        <div class="subtitle">พรรคประชาชน · People's Party</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-new" id="btnNew">ออกใบใหม่</button>
+      <button class="btn btn-save" id="btnSave">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"></path></svg>
+        <span id="btnSaveLabel">บันทึกลง Sheet</span>
+      </button>
+      <button class="btn btn-print" id="btnPrint">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        พิมพ์ใบเสร็จ
+      </button>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <!-- FORM PANEL -->
+    <aside class="form">
+      <div class="form-inner">
+
+        <!-- CARD READER (Phase 3 — ยังไม่เปิดใช้) -->
+        <div class="card-reader">
+          <div class="head">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F06820" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"></rect><rect x="5" y="9" width="5" height="4" rx="1" fill="#F06820" stroke="none"></rect><path d="M14 10h5M14 13.5h3"></path></svg>
+            <span>อ่านบัตรประชาชน</span>
+          </div>
+          <p class="hint" id="cardHint">เสียบบัตรเข้าเครื่องอ่าน แล้วกดปุ่มเพื่อดึงข้อมูลอัตโนมัติ</p>
+          <button id="btnCard">เสียบบัตรเพื่ออ่านข้อมูล</button>
+        </div>
+
+        <!-- DOC INFO -->
+        <div class="section">
+          <div class="section-label">ข้อมูลเอกสาร</div>
+          <div class="row">
+            <div style="width:74px;flex:none">
+              <label class="fld">เล่มที่</label>
+              <input class="in" id="bookNo" style="text-align:center">
+            </div>
+            <div style="flex:1">
+              <label class="fld">เลขที่เอกสาร</label>
+              <input class="in" id="docNo">
+            </div>
+          </div>
+          <div style="margin-top:13px">
+            <label class="fld">วันที่</label>
+            <input class="in" type="date" id="date">
+          </div>
+        </div>
+
+        <!-- RECEIVER -->
+        <div class="section">
+          <div class="section-label">ผู้รับเงิน</div>
+          <label class="fld">ชื่อ–นามสกุล</label>
+          <input class="in mb" id="receiverName" placeholder="เช่น นายสมชาย ใจดี">
+          <label class="fld">เลขประจำตัวประชาชน</label>
+          <input class="in mb" id="receiverId" inputmode="numeric" placeholder="x-xxxx-xxxxx-xx-x" style="letter-spacing:.04em">
+          <label class="fld">ที่อยู่ตามทะเบียนบ้าน</label>
+          <input class="in sm mb9" id="addrLine1" placeholder="บ้านเลขที่ หมู่ หมู่บ้าน ซอย ถนน">
+          <div class="row mb9">
+            <input class="in sm" id="addrSub" placeholder="ตำบล/แขวง" style="flex:1">
+            <input class="in sm" id="addrDistrict" placeholder="อำเภอ/เขต" style="flex:1">
+          </div>
+          <div class="row">
+            <input class="in sm" id="addrProvince" placeholder="จังหวัด" style="flex:1">
+            <input class="in sm" id="addrPostal" inputmode="numeric" placeholder="รหัสไปรษณีย์" style="width:120px;flex:none">
+          </div>
+        </div>
+
+        <!-- PERIOD / PAY -->
+        <div class="section">
+          <div class="section-label">ประเภทค่าบำรุงพรรคการเมือง</div>
+          <div class="chips" id="periodChips">
+            <button class="chip" data-period="yearly">รายปี</button>
+            <button class="chip" data-period="lifetime">ตลอดชีพ</button>
+          </div>
+          <div class="section-label" style="margin-top:18px">โดยรับเป็น</div>
+          <div class="chips" id="payChips">
+            <button class="chip" data-pay="cash">เงินสด</button>
+            <button class="chip" data-pay="transfer">เงินโอน</button>
+          </div>
+        </div>
+
+        <!-- ITEMS -->
+        <div class="section">
+          <div class="section-label">รายการจ่ายเงิน</div>
+          <div id="itemList"></div>
+          <button class="add-row" id="btnAddRow">+ เพิ่มรายการ</button>
+
+          <div style="margin-top:16px">
+            <div style="font-size:12px;font-weight:600;color:#6B7585;margin-bottom:8px">จำนวนเงิน</div>
+            <div class="quick" id="quickBtns"></div>
+          </div>
+
+          <div class="total">
+            <div class="line">
+              <span class="lbl">รวมเป็นเงิน</span>
+              <span class="val"><span id="totalFmt">0.00</span> บาท</span>
+            </div>
+            <div class="text" id="totalText">(ศูนย์บาทถ้วน)</div>
+          </div>
+        </div>
+
+        <!-- SIGNER -->
+        <div class="section">
+          <label class="fld">ชื่อผู้ลงนาม</label>
+          <input class="in mb" id="signerName" placeholder="เช่น ณัฐวุฒิ บัวประมูล" style="color:#F06820;font-weight:600">
+          <label class="fld">ตำแหน่ง</label>
+          <input class="in" id="signerPosition" placeholder="เช่น นายทะเบียนสมาชิกพรรคประชาชน">
+        </div>
+
+        <!-- HISTORY -->
+        <div class="history">
+          <div class="section-label">บันทึกลง Sheet ล่าสุด</div>
+          <div id="historyList"></div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- PREVIEW PANEL -->
+    <main class="preview">
+      <div class="scroll">
+        <div id="receipt-print">
+          <div class="receipt">
+            <div class="center">
+              <img class="logo" id="receiptLogo">
+              <div class="org">สำนักงานใหญ่พรรคประชาชน</div>
+              <div class="org-addr">เลขที่ 167 ชั้น 4 ซอยรามคำแหง 42<br>แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240<br>โทร. 02-038-5100<br>เลขผู้เสียภาษี 099-4-00246880-3</div>
+            </div>
+            <div class="dash"></div>
+            <div class="doc-title">ใบสำคัญรับเงินชั่วคราว</div>
+            <div class="doc-meta">เล่มที่ <span id="rBookNo"></span> · เลขที่ <span id="rDocNo"></span></div>
+            <div class="doc-meta">วันที่ <span id="rDate"></span></div>
+            <div class="dash"></div>
+            <div class="field"><b>ผู้รับเงิน:</b> <span id="rName"></span></div>
+            <div class="field"><b>เลขบัตรประชาชน:</b> <span id="rId" style="font-variant-numeric:tabular-nums"></span></div>
+            <div class="field"><b>ที่อยู่:</b> <span id="rAddr"></span></div>
+            <div class="dash"></div>
+            <div id="rItems"></div>
+            <div class="dash"></div>
+            <div class="sum"><span class="lbl">รวมทั้งสิ้น</span><span id="rTotal" style="font-variant-numeric:tabular-nums"></span></div>
+            <div class="sum-text">(<span id="rTotalText"></span>)</div>
+            <div class="dash"></div>
+            <div class="field"><b>รับเป็น:</b> <span id="rPay"></span></div>
+            <div class="dash sign-pad"></div>
+            <div class="sign">
+              <div>(ลงชื่อ)........................................ผู้รับเงิน</div>
+              <div>( <b id="rSigner"></b> )</div>
+              <div class="pos" id="rSignerPos"></div>
+            </div>
+            <div class="dash" style="margin:11px 0 7px"></div>
+            <div class="note">&nbsp;การสมัครสมาชิกจะเสร็จสิ้นสมบูรณ์ก็ต่อเมื่อพรรคได้ตรวจสอบคุณสมบัติและลักษณะต้องห้ามของผู้สมัคร และเอกสารประกอบการสมัคร ให้เป็นไปตามที่กฎหมายและข้อบังคับพรรคกำหนดแล้ว กรณีที่ผลการตรวจสอบปรากฏว่า ท่านมีคุณสมบัติและไม่มีลักษณะต้องห้ามตามกฎหมาย และเอกสารประกอบถูกต้องครบถ้วน พรรคจะออกใบเสร็จรับเงิน (แบบ พ.ก. 9) ให้ท่านภายใน 7 วันนับแต่วันที่นายทะเบียนสมาชิกอนุมัติใบสมัครสมาชิกของท่าน ทั้งนี้ ใบสำคัญรับเงินชั่วคราวฉบับนี้ เป็นเพียงหลักฐานการรับเงินที่ท่านแสดงความประสงค์จะชำระเป็นค่าบำรุงพรรคและ/หรือค่าธรรมเนียมการออกบัตรประจำตัวสมาชิกเท่านั้น อนึ่ง ในกรณีที่ท่านแสดงเจตนาชำระค่าบำรุงพรรคเพื่อการต่ออายุสมาชิก หรือการเปลี่ยนประเภทสมาชิก ก่อนครบกำหนด 1 ปีของรอบสมาชิกพรรคประเภทรายปี เงินที่ท่านแสดงเจตนาชำระถือเป็นการชำระค่าบำรุงพรรคล่วงหน้า จะมีผลเป็นการต่ออายุสมาชิก หรือการเปลี่ยนประเภทสมาชิก เมื่อครบกำหนด 1 ปีของรอบสมาชิกพรรคของท่าน ในกรณีที่พรรคตรวจสอบแล้วปรากฏว่า ผู้สมัครขาดคุณสมบัติหรือมีลักษณะต้องห้ามตามกฎหมาย ข้อมูลที่เป็นสาระสำคัญขาดตกหรือไม่ถูกต้อง เอกสารประกอบการสมัครไม่ครบถ้วน พรรคจะปฏิเสธการรับสมัครสมาชิก และพรรคจะคืนเงินค่าบำรุงพรรค และ/หรือค่าธรรมเนียม ให้แก่ผู้สมัครเต็มจำนวน ทั้งนี้ หลักเกณฑ์และวิธีการคืนเงินให้เป็นไปตามที่คณะกรรมการบริหารพรรคกำหนด</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast hidden" id="toast">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5FD08A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"></path></svg>
+    <span id="toastMsg"></span>
+  </div>
+
+</div>
+
+<?!= include('Logo'); ?>
+<?!= include('JavaScript'); ?>
+</body>
+</html>

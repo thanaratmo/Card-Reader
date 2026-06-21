@@ -24,9 +24,31 @@ function checkAccess_() {
 function doGet(e) {
   checkAccess_();
   return HtmlService
-    .createHtmlOutputFromFile('Index')
+    .createTemplateFromFile('Index')
+    .evaluate()
     .setTitle('ระบบออกใบสำคัญรับเงินชั่วคราว — พรรคประชาชน')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ------------------------------------------------------------
+// include — ฝังไฟล์ HTML อื่น (CSS / JS / fonts) เข้า Index
+// ------------------------------------------------------------
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// ------------------------------------------------------------
+// getInitData — ข้อมูลเริ่มต้นตอนเปิดแอป (เลขเอกสารถัดไป + ประวัติ)
+// ------------------------------------------------------------
+function getInitData() {
+  var email = checkAccess_();
+  return {
+    email:     email,
+    nextDocNo: getNextDocNo(),
+    today:     Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd'),
+    recent:    getRecentRows(8)
+  };
 }
 
 // ------------------------------------------------------------
