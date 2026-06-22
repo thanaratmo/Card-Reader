@@ -123,6 +123,11 @@
   .receipt .qr-img{width:96px;height:96px;display:block;margin:0 auto}
   .receipt .qr-cap{font-size:10px;color:#555;margin-top:3px;font-family:'Sarabun',Arial}
 
+  /* ใบเสร็จขาวดำล้วน — ตัวอักษรดำเข้ม พิมพ์ไม่จาง */
+  #receipt-print, #receipt-print *{color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #receipt-print .dash{border-top-color:#000 !important}
+  #receipt-print .logo{filter:grayscale(100%) brightness(0)}   /* โลโก้เป็นสีดำ */
+
   /* toast popup (กลางจอ) */
   .toast-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(18,24,34,.30);z-index:100;animation:fade .15s ease-out}
   .toast-pop{background:#16321F;color:#fff;padding:20px 28px;border-radius:16px;font-size:16px;font-weight:600;box-shadow:0 16px 48px rgba(0,0,0,.32);display:flex;align-items:center;gap:12px;max-width:80%;text-align:center;animation:pop .18s ease-out}
