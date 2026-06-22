@@ -62,17 +62,23 @@
     if(sat===0) out+='ถ้วน'; else out+=readNumber(fixed[1])+'สตางค์';
     return out;
   }
+  // เติม prefix ให้เฉพาะเมื่อยังไม่มีคำนำหน้า (กันซ้ำ เช่น "ต.ตำบลหนองผึ้ง")
+  function pfx(val, has, add){
+    var v=String(val||'').trim(); if(!v) return '';
+    for(var i=0;i<has.length;i++){ if(v.indexOf(has[i])===0) return v; }
+    return add+v;
+  }
   function buildAddr(a){
-    var isBKK=(a.province||'').trim()==='กรุงเทพมหานคร';
+    var isBKK=(a.province||'').trim().indexOf('กรุงเทพ')===0;
     var segs=[];
-    if(a.houseNo) segs.push('บ้านเลขที่ '+a.houseNo);
-    if(a.moo)     segs.push('หมู่ '+a.moo);
+    if(a.houseNo) segs.push(pfx(a.houseNo, ['บ้านเลขที่','เลขที่'], 'บ้านเลขที่ '));
+    if(a.moo)     segs.push(pfx(a.moo, ['หมู่'], 'หมู่ '));
     if(a.village) segs.push(a.village);
-    if(a.soi)     segs.push('ซอย '+a.soi);
-    if(a.road)    segs.push('ถนน '+a.road);
-    if(a.subdistrict) segs.push((isBKK?'แขวง':'ต.')+a.subdistrict);
-    if(a.district)    segs.push((isBKK?'เขต':'อ.')+a.district);
-    if(a.province)    segs.push(isBKK?a.province:'จ.'+a.province);
+    if(a.soi)     segs.push(pfx(a.soi, ['ซอย','ซ.'], 'ซอย '));
+    if(a.road)    segs.push(pfx(a.road, ['ถนน','ถ.'], 'ถนน '));
+    if(a.subdistrict) segs.push(pfx(a.subdistrict, ['ตำบล','แขวง','ต.'], isBKK?'แขวง':'ต.'));
+    if(a.district)    segs.push(pfx(a.district, ['อำเภอ','กิ่งอำเภอ','เขต','อ.'], isBKK?'เขต':'อ.'));
+    if(a.province)    segs.push(pfx(a.province, ['จังหวัด','กรุงเทพ','จ.'], isBKK?'':'จ.'));
     if(a.postal)      segs.push(a.postal);
     return segs.join(' ');
   }
