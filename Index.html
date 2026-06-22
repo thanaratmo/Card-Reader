@@ -38,15 +38,8 @@
     <aside class="form">
       <div class="form-inner">
 
-        <!-- CARD READER (Phase 3 — ยังไม่เปิดใช้) -->
-        <div class="card-reader">
-          <div class="head">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F06820" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"></rect><rect x="5" y="9" width="5" height="4" rx="1" fill="#F06820" stroke="none"></rect><path d="M14 10h5M14 13.5h3"></path></svg>
-            <span>อ่านบัตรประชาชน</span>
-          </div>
-          <p class="hint" id="cardHint">เสียบบัตรเข้าเครื่องอ่าน แล้วกดปุ่มเพื่อดึงข้อมูลอัตโนมัติ</p>
-          <button id="btnCard">เสียบบัตรเพื่ออ่านข้อมูล</button>
-        </div>
+        <!-- CARD READER STATUS (ตรวจจับบัตรอัตโนมัติ) -->
+        <div id="cardStatus" class="card-status hidden"></div>
 
         <!-- DOC INFO -->
         <div class="section">

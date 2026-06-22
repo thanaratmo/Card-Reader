@@ -445,53 +445,57 @@
       window.addEventListener(ev,function(e){ e.preventDefault(); });
     });
 
-    // card reader — Phase 3 (Python agent @ localhost:8765)
-    $('btnCard').onclick=readCard;
   }
 
-  // ---------- card reader ----------
+  // ---------- card reader (ตรวจจับ + อ่านอัตโนมัติ) ----------
   var AGENT_URL='http://127.0.0.1:8765';
-  var cardReading=false;
+  var card={present:false, busy:false, lastRead:0};
 
-  function setCardHint(text, cls){
-    var h=$('cardHint'); h.textContent=text;
-    h.className='hint'+(cls?(' '+cls):'');
+  function setCardStatus(text, cls){
+    var el=$('cardStatus'); if(!el) return;
+    if(!text){ el.classList.add('hidden'); return; }
+    el.textContent=text;
+    el.className='card-status '+(cls||'');
   }
 
-  function readCard(){
-    if(cardReading) return;
-    cardReading=true;
-    var btn=$('btnCard'); btn.disabled=true; btn.textContent='กำลังอ่านบัตร…';
-    setCardHint('กำลังอ่านข้อมูลจากชิปบัตร…','reading');
+  function startCardWatch(){
+    setInterval(pollCard, 2500);
+  }
 
+  function pollCard(){
+    if(card.busy) return;
+    fetch(AGENT_URL+'/status')
+      .then(function(r){ return r.json(); })
+      .then(function(s){
+        var present = !!(s && s.ok && s.readerConnected && s.cardPresent);
+        if(present && !card.present && (Date.now()-card.lastRead>4000)){
+          card.present=true; autoReadCard();
+        } else if(!present){
+          card.present=false;
+        }
+      })
+      .catch(function(){ card.present=false; });  // agent ไม่เปิด → เงียบไว้ (กรอกเองได้)
+  }
+
+  function autoReadCard(){
+    card.busy=true;
+    setCardStatus('กำลังอ่านข้อมูลจากชิปบัตร…','reading');
     var ctrl=new AbortController();
     var timer=setTimeout(function(){ ctrl.abort(); }, 15000);
-
-    fetch(AGENT_URL+'/read', {signal:ctrl.signal})
+    fetch(AGENT_URL+'/read',{signal:ctrl.signal})
       .then(function(r){ return r.json(); })
       .then(function(res){
         clearTimeout(timer);
         if(res && res.ok && res.data){
           applyCardData(res.data);
-          setCardHint('✓ อ่านบัตรสำเร็จ — เติมข้อมูลให้แล้ว','done');
-          btn.textContent='อ่านบัตรอีกครั้ง';
+          setCardStatus('✓ อ่านบัตรสำเร็จ — เติมข้อมูลให้แล้ว','done');
           toast('อ่านบัตรประชาชนสำเร็จ');
         } else {
-          setCardHint((res && res.error) ? res.error : 'อ่านบัตรไม่สำเร็จ','reading');
-          btn.textContent='เสียบบัตรเพื่ออ่านข้อมูล';
-          toast('อ่านบัตรไม่สำเร็จ', true);
+          setCardStatus((res && res.error) ? res.error : 'อ่านบัตรไม่สำเร็จ','reading');
         }
       })
-      .catch(function(err){
-        clearTimeout(timer);
-        var aborted = err && err.name==='AbortError';
-        setCardHint(aborted
-          ? 'หมดเวลา — ตรวจสอบว่าเสียบบัตรแล้ว'
-          : 'เชื่อมต่อโปรแกรมอ่านบัตรไม่ได้ — เปิด start-agent.bat ก่อน', 'reading');
-        btn.textContent='เสียบบัตรเพื่ออ่านข้อมูล';
-        toast(aborted ? 'หมดเวลาอ่านบัตร' : 'ยังไม่ได้เปิดโปรแกรม agent อ่านบัตร', true);
-      })
-      .then(function(){ cardReading=false; btn.disabled=false; });
+      .catch(function(){ setCardStatus('อ่านบัตรไม่สำเร็จ ลองเสียบใหม่','reading'); })
+      .then(function(){ card.busy=false; card.lastRead=Date.now(); });
   }
 
   function applyCardData(d){
@@ -538,6 +542,7 @@
     // logo
     if(window.LOGO_SRC){ $('brandLogo').src=window.LOGO_SRC; $('receiptLogo').src=window.LOGO_SRC; }
     if(window.QR_SRC){ $('receiptQR').src=window.QR_SRC; }
+    startCardWatch();   // ตรวจจับบัตรอัตโนมัติ
     fillForm();
     bind();
     render();
