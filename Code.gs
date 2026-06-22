@@ -118,30 +118,33 @@ function saveRow(payload) {
     payload.docNo        || '',   // B docNo
     payload.bookNo       || '',   // C bookNo
     payload.date         || '',   // D date
-    payload.receiverName || '',   // E receiverName
-    payload.receiverId   || '',   // F receiverId
-    payload.dobDay       || '',   // G วันเกิด
-    payload.dobMonth     || '',   // H เดือนเกิด
-    payload.dobYear      || '',   // I ปีเกิด
-    payload.gender       || '',   // J เพศ
-    payload.houseNo      || '',   // K houseNo
-    payload.moo          || '',   // L moo
-    payload.village      || '',   // M village
-    payload.soi          || '',   // N soi
-    payload.road         || '',   // O road
-    payload.subdistrict  || '',   // P subdistrict
-    payload.district     || '',   // Q district
-    payload.province     || '',   // R province
-    payload.postal       || '',   // S postal
-    typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []),  // T items
-    Number(payload.total) || 0,   // U total
-    payload.payMethod        || '',  // V
-    payload.membershipPeriod || '',  // W
-    payload.signerName       || '',  // X
-    payload.signerPosition   || '',  // Y
-    email,                        // Z savedBy
-    slipNote,                     // AA slip
-    slipUrlCell                   // AB slipUrl
+    payload.receiverName || '',   // E ชื่อเต็ม
+    payload.firstName    || '',   // F ชื่อ
+    payload.middleName   || '',   // G ชื่อกลาง
+    payload.lastName     || '',   // H นามสกุล
+    payload.receiverId   || '',   // I เลขบัตร
+    payload.dobDay       || '',   // J วันเกิด
+    payload.dobMonth     || '',   // K เดือนเกิด
+    payload.dobYear      || '',   // L ปีเกิด
+    payload.gender       || '',   // M เพศ
+    payload.houseNo      || '',   // N houseNo
+    payload.moo          || '',   // O moo
+    payload.village      || '',   // P village
+    payload.soi          || '',   // Q soi
+    payload.road         || '',   // R road
+    payload.subdistrict  || '',   // S subdistrict
+    payload.district     || '',   // T district
+    payload.province     || '',   // U province
+    payload.postal       || '',   // V postal
+    typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []),  // W items
+    Number(payload.total) || 0,   // X total
+    payload.payMethod        || '',  // Y
+    payload.membershipPeriod || '',  // Z
+    payload.signerName       || '',  // AA
+    payload.signerPosition   || '',  // AB
+    email,                        // AC savedBy
+    slipNote,                     // AD slip
+    slipUrlCell                   // AE slipUrl
   ]);
 
   return { ok: true, savedAt: now.toISOString() };
@@ -218,11 +221,13 @@ function getRecentRows(n) {
 // header / sheet helpers
 // ------------------------------------------------------------
 var HEADERS = [
-  'timestamp', 'docNo', 'bookNo', 'date',           // A B C D
-  'receiverName', 'receiverId',                     // E F
-  'วันเกิด', 'เดือนเกิด', 'ปีเกิด', 'เพศ',          // G H I J
-  'houseNo', 'moo', 'village', 'soi', 'road',       // K L M N O
-  'subdistrict', 'district', 'province', 'postal',  // P Q R S
+  'timestamp', 'docNo', 'bookNo', 'date',              // A B C D
+  'receiverName',                                      // E ชื่อเต็ม
+  'ชื่อ', 'ชื่อกลาง', 'นามสกุล',                       // F G H
+  'receiverId',                                        // I เลขบัตร
+  'วันเกิด', 'เดือนเกิด', 'ปีเกิด', 'เพศ',             // J K L M
+  'houseNo', 'moo', 'village', 'soi', 'road',          // N O P Q R
+  'subdistrict', 'district', 'province', 'postal',     // S T U V
   'items', 'total', 'payMethod', 'membershipPeriod',
   'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl'
 ];

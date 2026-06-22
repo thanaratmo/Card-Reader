@@ -63,8 +63,22 @@
         <!-- RECEIVER -->
         <div class="section">
           <div class="section-label">ผู้ชำระเงิน</div>
-          <label class="fld">ชื่อ–นามสกุล</label>
+          <label class="fld">ชื่อ–นามสกุล (เต็ม)</label>
           <input class="in mb" id="receiverName" placeholder="เช่น นายสมชาย ใจดี">
+          <div class="row mb">
+            <div style="flex:1">
+              <label class="fld">ชื่อ</label>
+              <input class="in" id="firstName" placeholder="ชื่อ">
+            </div>
+            <div style="flex:1">
+              <label class="fld">ชื่อกลาง</label>
+              <input class="in" id="middleName" placeholder="ชื่อกลาง">
+            </div>
+            <div style="flex:1">
+              <label class="fld">นามสกุล</label>
+              <input class="in" id="lastName" placeholder="นามสกุล">
+            </div>
+          </div>
           <label class="fld">เลขประจำตัวประชาชน</label>
           <input class="in mb" id="receiverId" inputmode="numeric" placeholder="x-xxxx-xxxxx-xx-x" style="letter-spacing:.04em">
           <div class="row mb">
