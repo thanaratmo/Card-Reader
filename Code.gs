@@ -135,22 +135,6 @@ function saveRow(payload) {
     slipUrlCell
   ]);
 
-  // ฝัง thumbnail รูปสลิปลงในชีต (คอลัมน์ slip ของแถวนั้น)
-  if (blob) {
-    try {
-      var newRow  = sheet.getLastRow();
-      var slipCol = HEADERS.indexOf('slip') + 1;
-      var image   = sheet.insertImage(blob, slipCol, newRow);
-      var w = Number(payload.slipW) || 0, h = Number(payload.slipH) || 0;
-      var tw = 120;
-      var th = (w > 0 && h > 0) ? Math.round(tw * h / w) : 120;
-      image.setWidth(tw).setHeight(th);
-      sheet.setRowHeight(newRow, Math.max(th + 8, 90));
-    } catch (err) {
-      // ถ้าฝัง thumbnail ไม่สำเร็จ ก็ยังมีลิงก์ Drive ใน slipUrl
-    }
-  }
-
   return { ok: true, savedAt: now.toISOString() };
 }
 
