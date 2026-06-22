@@ -299,6 +299,29 @@
     toast('เริ่มเอกสารใหม่');
   }
 
+  // ---------- export Excel (ยกเว้นสลิป) ----------
+  function exportExcel(){
+    var btn=$('btnExport'); btn.disabled=true; $('btnExportLabel').textContent='กำลังสร้างไฟล์…';
+    google.script.run
+      .withSuccessHandler(function(res){
+        btn.disabled=false; $('btnExportLabel').textContent='บันทึก Excel';
+        if(!res || !res.b64){ toast('ไม่มีข้อมูลให้ส่งออก', true); return; }
+        var bin=atob(res.b64), len=bin.length, bytes=new Uint8Array(len);
+        for(var i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+        var blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        var a=document.createElement('a');
+        a.href=URL.createObjectURL(blob); a.download=res.name||'ใบเสร็จ.xlsx';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+        toast('บันทึกไฟล์ Excel เรียบร้อย');
+      })
+      .withFailureHandler(function(err){
+        btn.disabled=false; $('btnExportLabel').textContent='บันทึก Excel';
+        toast('ส่งออกไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
+      })
+      .exportExcel();
+  }
+
   function printReceipt(){
     // เงินโอน: ต้องแนบสลิปก่อน
     if(state.payMethod==='transfer' && !(state.slip && state.slip.dataUrl)){
@@ -379,6 +402,7 @@
 
     $('btnPrint').onclick=printReceipt;
     $('btnNew').onclick=newDoc;
+    $('btnExport').onclick=exportExcel;
 
     // คลิกที่ popup เพื่อปิด
     $('toast').onclick=function(){ this.classList.add('hidden'); };

@@ -139,6 +139,45 @@ function saveRow(payload) {
 }
 
 // ------------------------------------------------------------
+// exportExcel — ส่งออกข้อมูลทั้งหมดเป็นไฟล์ .xlsx (ยกเว้นคอลัมน์ slip, slipUrl)
+// ------------------------------------------------------------
+function exportExcel() {
+  checkAccess_();
+  var sheet  = getSheet_();
+  var values = sheet.getDataRange().getValues();
+  if (!values.length) return { name: '', b64: '' };
+
+  var header = values[0];
+  // คอลัมน์ที่จะตัดออก
+  var dropNames = ['slip', 'slipUrl'];
+  var keep = [];
+  for (var i = 0; i < header.length; i++) {
+    if (dropNames.indexOf(header[i]) === -1) keep.push(i);
+  }
+  var filtered = values.map(function (row) {
+    return keep.map(function (i) { return i < row.length ? row[i] : ''; });
+  });
+
+  // สร้างสเปรดชีตชั่วคราว → export เป็น xlsx → ลบทิ้ง
+  var tmp = SpreadsheetApp.create('export_tmp_' + Date.now());
+  var ts  = tmp.getSheets()[0];
+  ts.getRange(1, 1, filtered.length, filtered[0].length).setValues(filtered);
+  SpreadsheetApp.flush();
+
+  var id    = tmp.getId();
+  var url   = 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=xlsx';
+  var token = ScriptApp.getOAuthToken();
+  var resp  = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  var b64   = Utilities.base64Encode(resp.getBlob().getBytes());
+
+  DriveApp.getFileById(id).setTrashed(true);
+
+  var name = 'ใบเสร็จพรรคประชาชน_' +
+             Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd_HHmm') + '.xlsx';
+  return { name: name, b64: b64 };
+}
+
+// ------------------------------------------------------------
 // getRecentRows — ดึง n แถวล่าสุด (ไม่รวม header)
 // ------------------------------------------------------------
 function getRecentRows(n) {
