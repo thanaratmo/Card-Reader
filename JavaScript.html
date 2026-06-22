@@ -329,17 +329,13 @@
       sb.scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
-    // เงินโอน: รอสลิปอัปโหลดเสร็จก่อน (กันบันทึกโดยไม่มีลิงก์สลิป)
+    // ถ้าสลิปยังอัปโหลดไม่เสร็จ → พิมพ์ได้เลย แล้วค่อยบันทึกอัตโนมัติเมื่ออัปโหลดเสร็จ
     if(state.payMethod==='transfer' && state.slip.uploading){
-      toast('กำลังอัปโหลดสลิป รอสักครู่แล้วกดอีกครั้ง', true);
-      return;
-    }
-    // สั่งบันทึกลง Sheet แบบ async — ข้ามถ้าบันทึกชุดนี้ไปแล้ว/กำลังบันทึก
-    if(!state.saving && state.lastSavedKey!==currentKey()){
+      state._savePending=true;
+    } else if(!state.saving && state.lastSavedKey!==currentKey()){
       saveSheet();
     }
-    // หน่วงเล็กน้อยให้คำสั่งบันทึก (google.script.run ข้าม iframe) ถูกส่งออกก่อน
-    // แล้วค่อยเปิดหน้าต่างพิมพ์ (window.print บล็อกหน้าจอ จึงต้องส่งบันทึกให้ทันก่อน)
+    // หน่วงเล็กน้อยให้คำสั่งบันทึกถูกส่งออกก่อน แล้วค่อยเปิดหน้าต่างพิมพ์
     setTimeout(function(){ window.print(); }, 500);
   }
 
@@ -369,11 +365,13 @@
             state.slip.uploading=false;
             state.slip.url=(res && res.url) ? res.url : '';
             $('slipName').textContent=file.name+' ✓';
+            if(state._savePending){ state._savePending=false; saveSheet(); }   // พิมพ์ไปก่อนแล้ว → บันทึกตอนนี้
           })
           .withFailureHandler(function(err){
             state.slip.uploading=false; state.slip.url='';
             $('slipName').textContent=file.name+' · อัปโหลดไม่สำเร็จ';
             toast('อัปโหลดสลิปไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
+            if(state._savePending){ state._savePending=false; saveSheet(); }   // บันทึกแถวไว้ (ไม่มีลิงก์สลิป)
           })
           .uploadSlip(dataUrl, state.receiverId, state.docNo);
       };
