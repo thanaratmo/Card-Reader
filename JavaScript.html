@@ -95,6 +95,12 @@
     for(var i=0;i<TITLES.length;i++){ if(n.indexOf(TITLES[i])===0) return n.slice(TITLES[i].length).trim(); }
     return n;
   }
+  // ดึงคำนำหน้าที่นำหน้าชื่อ (เช่น "นายธนะรัช" -> "นาย")
+  function getTitle(s){
+    var n=String(s||'').trim();
+    for(var i=0;i<TITLES.length;i++){ if(n.indexOf(TITLES[i])===0) return normTitle(TITLES[i]); }
+    return '';
+  }
   // เพศจากคำนำหน้าที่นำหน้าชื่อ: นาย/เด็กชาย→ชาย, นาง/น.ส./เด็กหญิง→หญิง
   function genderFromName(s){
     var n=String(s||'').trim();
@@ -315,6 +321,7 @@
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
       receiverName:fullNameNoTitle(),
+      title:getTitle(state.firstName),
       firstName:stripTitle(state.firstName), middleName:state.middleName, lastName:state.lastName,
       receiverId:state.receiverId, gender:state.gender,
       dobDay:dob.d, dobMonth:dob.m, dobYear:dob.y,
