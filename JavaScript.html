@@ -9,7 +9,7 @@
 
   var state = {
     bookNo:'1', docNo:'', date: todayISO(),
-    receiverName:'', firstName:'', middleName:'', lastName:'',
+    receiverName:'', title:'', firstName:'', middleName:'', lastName:'',
     receiverId:'', dob:'', gender:'',
     addr:{houseNo:'', moo:'', village:'', soi:'', road:'', subdistrict:'', district:'', province:'', postal:''},
     membershipPeriod:'lifetime', payMethod:'cash',
@@ -69,29 +69,44 @@
     for(var i=0;i<has.length;i++){ if(v.indexOf(has[i])===0) return v; }
     return add+v;
   }
-  // แยกชื่อเต็ม: ตัดคำนำหน้า แล้วแบ่ง ชื่อ/ชื่อกลาง/นามสกุล
+  // แยกชื่อเต็มจากบัตร: ตัดคำนำหน้า แล้วแบ่ง ชื่อ/ชื่อกลาง/นามสกุล + คืนคำนำหน้า
   function splitName(full){
     var n=String(full||'').trim();
     var titles=['นางสาว','น.ส.','เด็กชาย','เด็กหญิง','ด.ช.','ด.ญ.','นาย','นาง'];
-    for(var i=0;i<titles.length;i++){ if(n.indexOf(titles[i])===0){ n=n.slice(titles[i].length).trim(); break; } }
+    var title='';
+    for(var i=0;i<titles.length;i++){ if(n.indexOf(titles[i])===0){ title=normTitle(titles[i]); n=n.slice(titles[i].length).trim(); break; } }
     var p=n.split(/\s+/).filter(Boolean);
-    if(p.length===0) return {first:'', middle:'', last:''};
-    if(p.length===1) return {first:p[0], middle:'', last:''};
-    if(p.length===2) return {first:p[0], middle:'', last:p[1]};
-    return {first:p[0], middle:p.slice(1,p.length-1).join(' '), last:p[p.length-1]};
+    var first='', middle='', last='';
+    if(p.length===1){ first=p[0]; }
+    else if(p.length===2){ first=p[0]; last=p[1]; }
+    else if(p.length>=3){ first=p[0]; middle=p.slice(1,p.length-1).join(' '); last=p[p.length-1]; }
+    return {title:title, first:first, middle:middle, last:last};
   }
-  function applyNameParts(full){
-    var s=splitName(full);
-    state.firstName=s.first; state.middleName=s.middle; state.lastName=s.last;
-    $('firstName').value=s.first; $('middleName').value=s.middle; $('lastName').value=s.last;
+  // ปรับคำนำหน้าให้ตรงตัวเลือก dropdown
+  function normTitle(t){
+    if(t==='นางสาว'||t==='น.ส.') return 'น.ส.';
+    if(t==='ด.ช.') return 'เด็กชาย';
+    if(t==='ด.ญ.') return 'เด็กหญิง';
+    return t;
   }
-
-  // เพศจากคำนำหน้าชื่อ: นาย→ชาย, นาง/น.ส.→หญิง
-  function genderFromName(name){
-    var n=String(name||'').trim();
-    if(/^(นางสาว|น\.ส\.|นาง|เด็กหญิง|ด\.ญ\.)/.test(n)) return 'หญิง';
-    if(/^(นาย|เด็กชาย|ด\.ช\.)/.test(n)) return 'ชาย';
+  // เพศจากคำนำหน้า: นาย/เด็กชาย→ชาย, นาง/น.ส./เด็กหญิง→หญิง
+  function genderFromTitle(t){
+    if(t==='นาย'||t==='เด็กชาย') return 'ชาย';
+    if(t==='นาง'||t==='น.ส.'||t==='นางสาว'||t==='เด็กหญิง') return 'หญิง';
     return '';
+  }
+  // ชื่อเต็ม (มีคำนำหน้า) สำหรับใบเสร็จ
+  function fullNameWithTitle(){
+    return [state.title, state.firstName, state.middleName, state.lastName].filter(Boolean).join(' ');
+  }
+  // ชื่อเต็ม (ไม่มีคำนำหน้า) สำหรับบันทึกลงชีต
+  function fullNameNoTitle(){
+    return [state.firstName, state.middleName, state.lastName].filter(Boolean).join(' ');
+  }
+  // อัปเดตชื่อบนใบเสร็จ
+  function refreshName(){
+    state.receiverName=fullNameWithTitle();
+    $('rName').textContent=state.receiverName||'..........................................';
   }
 
   function buildAddr(a){
@@ -296,7 +311,7 @@
     var dob=parseDob(state.dob);
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
-      receiverName:state.receiverName,
+      receiverName:fullNameNoTitle(),
       firstName:state.firstName, middleName:state.middleName, lastName:state.lastName,
       receiverId:state.receiverId, gender:state.gender,
       dobDay:dob.d, dobMonth:dob.m, dobYear:dob.y,
@@ -330,12 +345,13 @@
       .withSuccessHandler(function(docNo){ state.docNo=docNo; $('docNo').value=docNo; })
       .withFailureHandler(function(){ /* keep old */ })
       .getNextDocNo();
-    state.receiverName=''; state.firstName=''; state.middleName=''; state.lastName='';
+    state.receiverName=''; state.title=''; state.firstName=''; state.middleName=''; state.lastName='';
     state.receiverId=''; state.dob=''; state.gender='';
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
     state._autoPostal=null;
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
-    ['receiverName','firstName','middleName','lastName','receiverId','gender','dob','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    ['title','firstName','middleName','lastName','receiverId','gender','dob','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    refreshName();
     clearSlip();
     render();
     toast('เริ่มเอกสารใหม่');
@@ -442,17 +458,16 @@
     $('bookNo').oninput=function(){ state.bookNo=this.value; $('rBookNo').textContent=this.value; };
     $('docNo').oninput =function(){ state.docNo=this.value; $('rDocNo').textContent=this.value; };
     $('date').oninput  =function(){ state.date=this.value; $('rDate').textContent=thaiDate(this.value); };
-    $('receiverName').oninput=function(){
-      state.receiverName=this.value;
-      $('rName').textContent=this.value||'..........................................';
-      var g=genderFromName(this.value);     // เติมเพศอัตโนมัติจากคำนำหน้า
+    $('title').onchange=function(){
+      state.title=this.value;
+      var g=genderFromTitle(this.value);    // เปลี่ยนเพศตามคำนำหน้า
       if(g){ state.gender=g; $('gender').value=g; }
-      applyNameParts(this.value);           // แยก ชื่อ/ชื่อกลาง/นามสกุล
+      refreshName();
     };
     $('gender').oninput=function(){ state.gender=this.value; };
-    $('firstName').oninput =function(){ state.firstName=this.value; };
-    $('middleName').oninput=function(){ state.middleName=this.value; };
-    $('lastName').oninput  =function(){ state.lastName=this.value; };
+    $('firstName').oninput =function(){ state.firstName=this.value; refreshName(); };
+    $('middleName').oninput=function(){ state.middleName=this.value; refreshName(); };
+    $('lastName').oninput  =function(){ state.lastName=this.value; refreshName(); };
     $('receiverId').oninput=function(){
       var v=this.value.replace(/\D/g,'').slice(0,13);
       this.value=v; state.receiverId=v; $('rId').textContent=v||'..........................';
@@ -559,16 +574,15 @@
   }
 
   function applyCardData(d){
-    state.receiverName = d.fullName || '';
     state.receiverId   = (d.cid||'').replace(/\D/g,'').slice(0,13);
     state.dob          = d.dob || '';
-    state.gender       = d.gender || genderFromName(d.fullName) || '';
-    // แยกชื่อ: ใช้จากบัตรถ้ามี ไม่งั้นแยกจากชื่อเต็ม
-    if(d.firstName || d.lastName){
-      state.firstName=d.firstName||''; state.middleName=''; state.lastName=d.lastName||'';
-    } else {
-      var s=splitName(d.fullName); state.firstName=s.first; state.middleName=s.middle; state.lastName=s.last;
-    }
+    // แยกชื่อ + คำนำหน้า
+    var s=splitName(d.fullName);
+    state.title      = normTitle(d.title||'') || s.title || '';
+    state.firstName  = d.firstName || s.first || '';
+    state.middleName = s.middle || '';
+    state.lastName   = d.lastName || s.last || '';
+    state.gender     = d.gender || genderFromTitle(state.title) || '';
     var a = d.address || {};
     state.addr = {
       houseNo:     a.houseNo     || '',
@@ -582,7 +596,7 @@
       postal:      a.postal      || ''
     };
     // sync DOM inputs
-    $('receiverName').value = state.receiverName;
+    $('title').value        = state.title;
     $('firstName').value    = state.firstName;
     $('middleName').value   = state.middleName;
     $('lastName').value     = state.lastName;
@@ -599,6 +613,7 @@
     $('addrProvince').value = state.addr.province;
     $('addrPostal').value   = state.addr.postal;
     autoPostal();   // เติมรหัสไปรษณีย์จากอำเภอ/จังหวัดที่อ่านได้
+    refreshName();  // อัปเดตชื่อบนใบเสร็จ
     render();
   }
 
