@@ -64,26 +64,13 @@
         <div class="section">
           <div class="section-label">ผู้ชำระเงิน</div>
           <div class="row mb">
-            <div style="width:110px;flex:none">
-              <label class="fld">คำนำหน้า</label>
-              <select class="in" id="title">
-                <option value="">–</option>
-                <option value="นาย">นาย</option>
-                <option value="นาง">นาง</option>
-                <option value="น.ส.">น.ส.</option>
-                <option value="เด็กชาย">เด็กชาย</option>
-                <option value="เด็กหญิง">เด็กหญิง</option>
-              </select>
+            <div style="flex:1.2">
+              <label class="fld">ชื่อ (ใส่คำนำหน้าได้)</label>
+              <input class="in" id="firstName" placeholder="เช่น นายธนะรัช">
             </div>
-            <div style="flex:1">
-              <label class="fld">ชื่อ</label>
-              <input class="in" id="firstName" placeholder="ชื่อ">
-            </div>
-          </div>
-          <div class="row mb">
             <div style="flex:1">
               <label class="fld">ชื่อกลาง</label>
-              <input class="in" id="middleName" placeholder="ชื่อกลาง (ถ้ามี)">
+              <input class="in" id="middleName" placeholder="ถ้ามี">
             </div>
             <div style="flex:1">
               <label class="fld">นามสกุล</label>

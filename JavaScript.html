@@ -9,7 +9,7 @@
 
   var state = {
     bookNo:'1', docNo:'', date: todayISO(),
-    receiverName:'', title:'', firstName:'', middleName:'', lastName:'',
+    receiverName:'', firstName:'', middleName:'', lastName:'',
     receiverId:'', dob:'', gender:'',
     addr:{houseNo:'', moo:'', village:'', soi:'', road:'', subdistrict:'', district:'', province:'', postal:''},
     membershipPeriod:'lifetime', payMethod:'cash',
@@ -82,30 +82,33 @@
     else if(p.length>=3){ first=p[0]; middle=p.slice(1,p.length-1).join(' '); last=p[p.length-1]; }
     return {title:title, first:first, middle:middle, last:last};
   }
-  // ปรับคำนำหน้าให้ตรงตัวเลือก dropdown
   function normTitle(t){
     if(t==='นางสาว'||t==='น.ส.') return 'น.ส.';
     if(t==='ด.ช.') return 'เด็กชาย';
     if(t==='ด.ญ.') return 'เด็กหญิง';
     return t;
   }
-  // เพศจากคำนำหน้า: นาย/เด็กชาย→ชาย, นาง/น.ส./เด็กหญิง→หญิง
-  function genderFromTitle(t){
-    if(t==='นาย'||t==='เด็กชาย') return 'ชาย';
-    if(t==='นาง'||t==='น.ส.'||t==='นางสาว'||t==='เด็กหญิง') return 'หญิง';
+  // คำนำหน้าที่รู้จัก (เรียงยาวก่อนสั้น)
+  var TITLES=['นางสาว','น.ส.','เด็กชาย','เด็กหญิง','ด.ช.','ด.ญ.','นาย','นาง'];
+  function stripTitle(s){
+    var n=String(s||'').trim();
+    for(var i=0;i<TITLES.length;i++){ if(n.indexOf(TITLES[i])===0) return n.slice(TITLES[i].length).trim(); }
+    return n;
+  }
+  // เพศจากคำนำหน้าที่นำหน้าชื่อ: นาย/เด็กชาย→ชาย, นาง/น.ส./เด็กหญิง→หญิง
+  function genderFromName(s){
+    var n=String(s||'').trim();
+    if(/^(นางสาว|น\.ส\.|นาง|เด็กหญิง|ด\.ญ\.)/.test(n)) return 'หญิง';
+    if(/^(นาย|เด็กชาย|ด\.ช\.)/.test(n)) return 'ชาย';
     return '';
   }
-  // ชื่อเต็ม (มีคำนำหน้า) สำหรับใบเสร็จ
-  function fullNameWithTitle(){
-    return [state.title, state.firstName, state.middleName, state.lastName].filter(Boolean).join(' ');
-  }
-  // ชื่อเต็ม (ไม่มีคำนำหน้า) สำหรับบันทึกลงชีต
+  // ชื่อเต็ม "ไม่มีคำนำหน้า" สำหรับบันทึกลงชีต
   function fullNameNoTitle(){
-    return [state.firstName, state.middleName, state.lastName].filter(Boolean).join(' ');
+    return [stripTitle(state.firstName), state.middleName, state.lastName].filter(Boolean).join(' ');
   }
-  // อัปเดตชื่อบนใบเสร็จ
+  // อัปเดตชื่อบนใบเสร็จ (แสดงคำนำหน้าตามที่พิมพ์)
   function refreshName(){
-    state.receiverName=fullNameWithTitle();
+    state.receiverName=[state.firstName, state.middleName, state.lastName].filter(Boolean).join(' ');
     $('rName').textContent=state.receiverName||'..........................................';
   }
 
@@ -312,7 +315,7 @@
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
       receiverName:fullNameNoTitle(),
-      firstName:state.firstName, middleName:state.middleName, lastName:state.lastName,
+      firstName:stripTitle(state.firstName), middleName:state.middleName, lastName:state.lastName,
       receiverId:state.receiverId, gender:state.gender,
       dobDay:dob.d, dobMonth:dob.m, dobYear:dob.y,
       houseNo:a.houseNo, moo:a.moo, village:a.village, soi:a.soi, road:a.road,
@@ -345,12 +348,12 @@
       .withSuccessHandler(function(docNo){ state.docNo=docNo; $('docNo').value=docNo; })
       .withFailureHandler(function(){ /* keep old */ })
       .getNextDocNo();
-    state.receiverName=''; state.title=''; state.firstName=''; state.middleName=''; state.lastName='';
+    state.receiverName=''; state.firstName=''; state.middleName=''; state.lastName='';
     state.receiverId=''; state.dob=''; state.gender='';
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
     state._autoPostal=null;
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
-    ['title','firstName','middleName','lastName','receiverId','gender','dob','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    ['firstName','middleName','lastName','receiverId','gender','dob','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
     refreshName();
     clearSlip();
     render();
@@ -458,14 +461,13 @@
     $('bookNo').oninput=function(){ state.bookNo=this.value; $('rBookNo').textContent=this.value; };
     $('docNo').oninput =function(){ state.docNo=this.value; $('rDocNo').textContent=this.value; };
     $('date').oninput  =function(){ state.date=this.value; $('rDate').textContent=thaiDate(this.value); };
-    $('title').onchange=function(){
-      state.title=this.value;
-      var g=genderFromTitle(this.value);    // เปลี่ยนเพศตามคำนำหน้า
+    $('gender').oninput=function(){ state.gender=this.value; };
+    $('firstName').oninput =function(){
+      state.firstName=this.value;
+      var g=genderFromName(this.value);     // เพศตามคำนำหน้าที่พิมพ์ในช่องชื่อ
       if(g){ state.gender=g; $('gender').value=g; }
       refreshName();
     };
-    $('gender').oninput=function(){ state.gender=this.value; };
-    $('firstName').oninput =function(){ state.firstName=this.value; refreshName(); };
     $('middleName').oninput=function(){ state.middleName=this.value; refreshName(); };
     $('lastName').oninput  =function(){ state.lastName=this.value; refreshName(); };
     $('receiverId').oninput=function(){
@@ -576,13 +578,14 @@
   function applyCardData(d){
     state.receiverId   = (d.cid||'').replace(/\D/g,'').slice(0,13);
     state.dob          = d.dob || '';
-    // แยกชื่อ + คำนำหน้า
+    // แยกชื่อ + คำนำหน้า (ใส่คำนำหน้าไว้ในช่องชื่อ เช่น "นายธนะรัช")
     var s=splitName(d.fullName);
-    state.title      = normTitle(d.title||'') || s.title || '';
-    state.firstName  = d.firstName || s.first || '';
+    var title=normTitle(d.title||'') || s.title || '';
+    var first=d.firstName || s.first || '';
+    state.firstName  = (title + first).trim();
     state.middleName = s.middle || '';
     state.lastName   = d.lastName || s.last || '';
-    state.gender     = d.gender || genderFromTitle(state.title) || '';
+    state.gender     = d.gender || genderFromName(state.firstName) || '';
     var a = d.address || {};
     state.addr = {
       houseNo:     a.houseNo     || '',
@@ -596,7 +599,6 @@
       postal:      a.postal      || ''
     };
     // sync DOM inputs
-    $('title').value        = state.title;
     $('firstName').value    = state.firstName;
     $('middleName').value   = state.middleName;
     $('lastName').value     = state.lastName;
