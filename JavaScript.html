@@ -322,6 +322,12 @@
   }
 
   function printReceipt(){
+    // ต้องระบุจำนวนเงินก่อน (กดปุ่มจำนวนเงิน หรือพิมพ์เอง)
+    if(total()<=0){
+      toast('กรุณาเลือก/ระบุจำนวนเงินก่อนพิมพ์', true);
+      var qb=$('quickBtns'); if(qb) qb.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
     // เงินโอน: ต้องแนบสลิปก่อน
     if(state.payMethod==='transfer' && !(state.slip && state.slip.dataUrl)){
       toast('กรุณาแนบสลิปการโอนเงินก่อนพิมพ์', true);
