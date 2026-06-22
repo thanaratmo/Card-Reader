@@ -80,6 +80,32 @@
   // ---------- dom helpers ----------
   var $ = function(id){ return document.getElementById(id); };
 
+  // ---------- postal auto-fill (จากไฟล์ Excel 77 จังหวัด) ----------
+  function normDist(s){ return String(s||'').replace(/^(อำเภอ|กิ่งอำเภอ|เขต|อ\.)\s*/,'').trim(); }
+  function normProv(s){ return String(s||'').replace(/^(จังหวัด|จ\.)\s*/,'').trim(); }
+  function lookupPostal(dist, prov){
+    var P=window.POSTAL; if(!P) return '';
+    dist=normDist(dist); prov=normProv(prov);
+    if(!dist) return '';
+    if(prov && P.byProv[prov]){
+      var pd=P.byProv[prov];
+      if(pd[dist]) return pd[dist];
+      if(dist==='เมือง' && pd['เมือง'+prov]) return pd['เมือง'+prov];  // ผู้ใช้พิมพ์ "เมือง" เฉยๆ
+    }
+    if(P.uniq[dist]) return P.uniq[dist];
+    return '';
+  }
+  function autoPostal(){
+    var p=lookupPostal(state.addr.district, state.addr.province);
+    if(!p) return;
+    var cur=state.addr.postal;
+    if(cur==='' || cur===state._autoPostal){   // ไม่ทับค่าที่ผู้ใช้พิมพ์เอง
+      state.addr.postal=p; state._autoPostal=p;
+      $('addrPostal').value=p;
+      $('rAddr').textContent=buildAddr(state.addr)||'..........................................................................';
+    }
+  }
+
   // ---------- render ----------
   function render(){
     var t=total();
@@ -259,6 +285,7 @@
       .getNextDocNo();
     state.receiverName=''; state.receiverId='';
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
+    state._autoPostal=null;
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
     ['receiverName','receiverId','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
     clearSlip();
@@ -328,7 +355,11 @@
     };
     var addrMap={addrHouseNo:'houseNo',addrMoo:'moo',addrVillage:'village',addrSoi:'soi',addrRoad:'road',addrSub:'subdistrict',addrDistrict:'district',addrProvince:'province',addrPostal:'postal'};
     Object.keys(addrMap).forEach(function(id){
-      $(id).oninput=function(){ state.addr[addrMap[id]]=this.value; $('rAddr').textContent=buildAddr(state.addr)||'..........................................................................'; };
+      $(id).oninput=function(){
+        state.addr[addrMap[id]]=this.value;
+        if(id==='addrDistrict'||id==='addrProvince') autoPostal();
+        $('rAddr').textContent=buildAddr(state.addr)||'..........................................................................';
+      };
     });
     $('signerName').oninput=function(){ state.signerName=this.value; $('rSigner').textContent=this.value; };
     $('signerPosition').oninput=function(){ state.signerPosition=this.value; $('rSignerPos').textContent=this.value; };
@@ -444,6 +475,7 @@
     $('addrDistrict').value = state.addr.district;
     $('addrProvince').value = state.addr.province;
     $('addrPostal').value   = state.addr.postal;
+    autoPostal();   // เติมรหัสไปรษณีย์จากอำเภอ/จังหวัดที่อ่านได้
     render();
   }
 
