@@ -137,7 +137,8 @@ function saveRow(payload) {
     payload.signerPosition   || '',
     email,
     slipNote,
-    slipUrlCell
+    slipUrlCell,
+    payload.dob || ''
   ]);
 
   return { ok: true, savedAt: now.toISOString() };
@@ -217,7 +218,7 @@ var HEADERS = [
   'houseNo', 'moo', 'village', 'soi', 'road',
   'subdistrict', 'district', 'province', 'postal',
   'items', 'total', 'payMethod', 'membershipPeriod',
-  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl'
+  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl', 'dob'
 ];
 
 function ensureHeader_(sheet) {
