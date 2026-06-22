@@ -138,7 +138,9 @@ function saveRow(payload) {
     email,
     slipNote,
     slipUrlCell,
-    payload.dob || ''
+    payload.dobDay   || '',
+    payload.dobMonth || '',
+    payload.dobYear  || ''
   ]);
 
   return { ok: true, savedAt: now.toISOString() };
@@ -218,7 +220,8 @@ var HEADERS = [
   'houseNo', 'moo', 'village', 'soi', 'road',
   'subdistrict', 'district', 'province', 'postal',
   'items', 'total', 'payMethod', 'membershipPeriod',
-  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl', 'dob'
+  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl',
+  'วันเกิด', 'เดือนเกิด', 'ปีเกิด'
 ];
 
 function ensureHeader_(sheet) {

@@ -250,14 +250,28 @@
     return [state.docNo, state.receiverName, total(), JSON.stringify(state.items)].join('|');
   }
 
+  // แยกวันเดือนปีเกิด: "4 พฤศจิกายน 2541" -> {d:'4', m:'พฤศจิกายน', y:'2541'}
+  function parseDob(s){
+    s=String(s||'').trim();
+    if(!s) return {d:'', m:'', y:''};
+    var thMonths=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    var m=s.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})$/);   // 4/11/2541
+    if(m){ return {d:m[1], m:(thMonths[+m[2]]||m[2]), y:m[3]}; }
+    var parts=s.split(/\s+/);
+    if(parts.length>=3){ return {d:parts[0], m:parts.slice(1,parts.length-1).join(' '), y:parts[parts.length-1]}; }
+    return {d:s, m:'', y:''};
+  }
+
   function saveSheet(onDone){
     if(state.saving){ return; }
     state.saving=true;
 
     var a=state.addr;
+    var dob=parseDob(state.dob);
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
-      receiverName:state.receiverName, receiverId:state.receiverId, dob:state.dob,
+      receiverName:state.receiverName, receiverId:state.receiverId,
+      dobDay:dob.d, dobMonth:dob.m, dobYear:dob.y,
       houseNo:a.houseNo, moo:a.moo, village:a.village, soi:a.soi, road:a.road,
       subdistrict:a.subdistrict, district:a.district, province:a.province, postal:a.postal,
       items:JSON.stringify(state.items),
