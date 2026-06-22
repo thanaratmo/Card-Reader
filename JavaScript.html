@@ -274,13 +274,12 @@
       sb.scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
-    var doPrint=function(){ setTimeout(function(){ window.print(); },120); };
-    // บันทึกลง Sheet อัตโนมัติก่อนพิมพ์ (ข้ามถ้าข้อมูลชุดนี้บันทึกไปแล้ว หรือกำลังบันทึกอยู่)
-    if(state.saving || state.lastSavedKey===currentKey()){
-      doPrint();
-    } else {
-      saveSheet(function(){ doPrint(); });
+    // สั่งบันทึกลง Sheet แบบ async (ไม่บล็อกการพิมพ์) — ข้ามถ้าบันทึกชุดนี้ไปแล้ว/กำลังบันทึก
+    if(!state.saving && state.lastSavedKey!==currentKey()){
+      saveSheet();
     }
+    // พิมพ์ทันทีในคลิกเดียว (ต้องอยู่ใน user gesture เบราว์เซอร์ถึงเปิดหน้าต่างพิมพ์)
+    window.print();
   }
 
   // ---------- slip upload ----------
