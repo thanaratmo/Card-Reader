@@ -14,7 +14,7 @@
     membershipPeriod:'lifetime', payMethod:'cash',
     signerName:'', signerPosition:'เจ้าหน้าที่ทะเบียนพรรคประชาชน',
     items:[{desc:'ค่าบำรุงพรรคการเมือง (ตลอดชีพ)', amount:''}],
-    slip:{dataUrl:'', name:'', w:0, h:0},
+    slip:{dataUrl:'', name:'', w:0, h:0, url:'', uploading:false},
     saving:false
   };
 
@@ -264,8 +264,7 @@
       total:total(),
       payMethod:state.payMethod, membershipPeriod:state.membershipPeriod,
       signerName:state.signerName, signerPosition:state.signerPosition,
-      slip:state.slip.dataUrl||'', slipName:state.slip.name||'',
-      slipW:state.slip.w||0, slipH:state.slip.h||0
+      slipUrl:state.slip.url||'', slipName:state.slip.name||''
     };
 
     google.script.run
@@ -330,6 +329,11 @@
       sb.scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
+    // เงินโอน: รอสลิปอัปโหลดเสร็จก่อน (กันบันทึกโดยไม่มีลิงก์สลิป)
+    if(state.payMethod==='transfer' && state.slip.uploading){
+      toast('กำลังอัปโหลดสลิป รอสักครู่แล้วกดอีกครั้ง', true);
+      return;
+    }
     // สั่งบันทึกลง Sheet แบบ async — ข้ามถ้าบันทึกชุดนี้ไปแล้ว/กำลังบันทึก
     if(!state.saving && state.lastSavedKey!==currentKey()){
       saveSheet();
@@ -352,12 +356,26 @@
         var c=document.createElement('canvas'); c.width=w; c.height=h;
         c.getContext('2d').drawImage(img,0,0,w,h);
         var dataUrl=c.toDataURL('image/jpeg',0.82);
-        state.slip={dataUrl:dataUrl, name:file.name, w:w, h:h};
+        state.slip={dataUrl:dataUrl, name:file.name, w:w, h:h, url:'', uploading:true};
         $('slipThumb').src=dataUrl;
-        $('slipName').textContent=file.name;
+        $('slipName').textContent=file.name+' · กำลังอัปโหลด…';
         $('slipPreview').classList.remove('hidden');
         $('slipDrop').textContent='เปลี่ยนรูปสลิป';
         state.lastSavedKey=null;   // มีสลิปใหม่ → ให้บันทึกใหม่ตอนพิมพ์
+
+        // อัปโหลดขึ้น Drive ทันที (แยกจากตอนพิมพ์) — ตั้งชื่อไฟล์ = เลขบัตร
+        google.script.run
+          .withSuccessHandler(function(res){
+            state.slip.uploading=false;
+            state.slip.url=(res && res.url) ? res.url : '';
+            $('slipName').textContent=file.name+' ✓';
+          })
+          .withFailureHandler(function(err){
+            state.slip.uploading=false; state.slip.url='';
+            $('slipName').textContent=file.name+' · อัปโหลดไม่สำเร็จ';
+            toast('อัปโหลดสลิปไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
+          })
+          .uploadSlip(dataUrl, state.receiverId, state.docNo);
       };
       img.src=e.target.result;
     };
@@ -365,7 +383,7 @@
   }
 
   function clearSlip(){
-    state.slip={dataUrl:'', name:'', w:0, h:0};
+    state.slip={dataUrl:'', name:'', w:0, h:0, url:'', uploading:false};
     $('slipInput').value='';
     $('slipThumb').src='';
     $('slipPreview').classList.add('hidden');

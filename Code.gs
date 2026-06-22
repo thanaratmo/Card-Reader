@@ -84,6 +84,21 @@ function getNextDocNo() {
 //     signerPosition
 //   }
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// uploadSlip — อัปโหลดรูปสลิปขึ้น Drive ทันทีตอนแนบรูป
+//   ตั้งชื่อไฟล์ = เลขบัตรประชาชน (ถ้าไม่มีใช้เลขเอกสาร)
+//   คืน { url } ให้ client เก็บไว้ส่งตอนบันทึก
+// ------------------------------------------------------------
+function uploadSlip(dataUrl, cid, docNo) {
+  checkAccess_();
+  if (!dataUrl) return { url: '' };
+  var b64   = String(dataUrl).replace(/^data:image\/\w+;base64,/, '');
+  var name  = (String(cid || '').replace(/\D/g, '') || docNo || 'slip') + '.jpg';
+  var blob  = Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', name);
+  var file  = DriveApp.getFolderById(SLIP_FOLDER_ID).createFile(blob);
+  return { url: file.getUrl(), name: name };
+}
+
 function saveRow(payload) {
   var email = checkAccess_();
   var sheet = getSheet_();
@@ -91,21 +106,11 @@ function saveRow(payload) {
 
   var now = new Date();
 
-  // ---- บันทึกรูปสลิปลง Drive (ตั้งชื่อไฟล์ = เลขบัตรประชาชน) ----
-  var blob = null, slipUrlCell = '', slipNote = '';
-  if (payload.slip) {
+  // สลิปถูกอัปโหลดขึ้น Drive ตั้งแต่ตอนแนบรูปแล้ว (ดู uploadSlip) — ที่นี่ใช้แค่ลิงก์
+  var slipUrlCell = '', slipNote = '';
+  if (payload.slipUrl) {
     slipNote = 'แนบสลิปแล้ว';
-    try {
-      var b64  = String(payload.slip).replace(/^data:image\/\w+;base64,/, '');
-      var cid  = String(payload.receiverId || '').replace(/\D/g, '');
-      var fname = (cid || payload.docNo || 'slip') + '.jpg';
-      blob = Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', fname);
-      var folder = DriveApp.getFolderById(SLIP_FOLDER_ID);
-      var file   = folder.createFile(blob);
-      slipUrlCell = '=HYPERLINK("' + file.getUrl() + '","ดูสลิป")';
-    } catch (err) {
-      slipNote = 'แนบสลิป (อัปโหลด Drive ไม่สำเร็จ)';
-    }
+    slipUrlCell = '=HYPERLINK("' + payload.slipUrl + '","ดูสลิป")';
   }
 
   sheet.appendRow([
