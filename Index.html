@@ -65,12 +65,18 @@
           <div class="section-label">ผู้ชำระเงิน</div>
           <label class="fld">ชื่อ–นามสกุล</label>
           <input class="in mb" id="receiverName" placeholder="เช่น นายสมชาย ใจดี">
-          <label class="fld">เพศ</label>
-          <input class="in mb" id="gender" placeholder="ชาย / หญิง (อิงจากคำนำหน้าชื่อ)">
           <label class="fld">เลขประจำตัวประชาชน</label>
           <input class="in mb" id="receiverId" inputmode="numeric" placeholder="x-xxxx-xxxxx-xx-x" style="letter-spacing:.04em">
-          <label class="fld">วันเดือนปีเกิด</label>
-          <input class="in mb" id="dob" placeholder="เช่น 4 พฤศจิกายน 2541">
+          <div class="row mb">
+            <div style="width:96px;flex:none">
+              <label class="fld">เพศ</label>
+              <input class="in" id="gender" placeholder="ชาย/หญิง">
+            </div>
+            <div style="flex:1">
+              <label class="fld">วันเดือนปีเกิด</label>
+              <input class="in" id="dob" placeholder="เช่น 4 พฤศจิกายน 2541">
+            </div>
+          </div>
           <label class="fld">ที่อยู่ตามทะเบียนบ้าน</label>
           <div class="row mb9">
             <input class="in sm" id="addrHouseNo" placeholder="เลขที่บ้าน" style="flex:1">
