@@ -114,34 +114,34 @@ function saveRow(payload) {
   }
 
   sheet.appendRow([
-    now,
-    payload.docNo        || '',
-    payload.bookNo       || '',
-    payload.date         || '',
-    payload.receiverName || '',
-    payload.receiverId   || '',
-    payload.houseNo      || '',
-    payload.moo          || '',
-    payload.village      || '',
-    payload.soi          || '',
-    payload.road         || '',
-    payload.subdistrict  || '',
-    payload.district     || '',
-    payload.province     || '',
-    payload.postal       || '',
-    typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []),
-    Number(payload.total) || 0,
-    payload.payMethod        || '',
-    payload.membershipPeriod || '',
-    payload.signerName       || '',
-    payload.signerPosition   || '',
-    email,
-    slipNote,
-    slipUrlCell,
-    payload.dobDay   || '',
-    payload.dobMonth || '',
-    payload.dobYear  || '',
-    payload.gender   || ''
+    now,                          // A timestamp
+    payload.docNo        || '',   // B docNo
+    payload.bookNo       || '',   // C bookNo
+    payload.date         || '',   // D date
+    payload.receiverName || '',   // E receiverName
+    payload.receiverId   || '',   // F receiverId
+    payload.dobDay       || '',   // G วันเกิด
+    payload.dobMonth     || '',   // H เดือนเกิด
+    payload.dobYear      || '',   // I ปีเกิด
+    payload.gender       || '',   // J เพศ
+    payload.houseNo      || '',   // K houseNo
+    payload.moo          || '',   // L moo
+    payload.village      || '',   // M village
+    payload.soi          || '',   // N soi
+    payload.road         || '',   // O road
+    payload.subdistrict  || '',   // P subdistrict
+    payload.district     || '',   // Q district
+    payload.province     || '',   // R province
+    payload.postal       || '',   // S postal
+    typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []),  // T items
+    Number(payload.total) || 0,   // U total
+    payload.payMethod        || '',  // V
+    payload.membershipPeriod || '',  // W
+    payload.signerName       || '',  // X
+    payload.signerPosition   || '',  // Y
+    email,                        // Z savedBy
+    slipNote,                     // AA slip
+    slipUrlCell                   // AB slipUrl
   ]);
 
   return { ok: true, savedAt: now.toISOString() };
@@ -201,13 +201,15 @@ function getRecentRows(n) {
   var range    = sheet.getRange(startRow, 1, n, numCols);
   var values   = range.getValues();
 
+  var iTs = HEADERS.indexOf('timestamp'), iDoc = HEADERS.indexOf('docNo');
+  var iName = HEADERS.indexOf('receiverName'), iTotal = HEADERS.indexOf('total');
   // คืนค่าล่าสุดก่อน (reverse) และ map ให้เป็น object
   return values.reverse().map(function(row) {
     return {
-      timestamp:        row[0]  ? Utilities.formatDate(new Date(row[0]), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm') : '',
-      docNo:            row[1]  || '',
-      receiverName:     row[4]  || '',
-      total:            row[16] || 0
+      timestamp:    row[iTs] ? Utilities.formatDate(new Date(row[iTs]), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm') : '',
+      docNo:        row[iDoc]  || '',
+      receiverName: row[iName] || '',
+      total:        row[iTotal] || 0
     };
   });
 }
@@ -216,13 +218,13 @@ function getRecentRows(n) {
 // header / sheet helpers
 // ------------------------------------------------------------
 var HEADERS = [
-  'timestamp', 'docNo', 'bookNo', 'date',
-  'receiverName', 'receiverId',
-  'houseNo', 'moo', 'village', 'soi', 'road',
-  'subdistrict', 'district', 'province', 'postal',
+  'timestamp', 'docNo', 'bookNo', 'date',           // A B C D
+  'receiverName', 'receiverId',                     // E F
+  'วันเกิด', 'เดือนเกิด', 'ปีเกิด', 'เพศ',          // G H I J
+  'houseNo', 'moo', 'village', 'soi', 'road',       // K L M N O
+  'subdistrict', 'district', 'province', 'postal',  // P Q R S
   'items', 'total', 'payMethod', 'membershipPeriod',
-  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl',
-  'วันเกิด', 'เดือนเกิด', 'ปีเกิด', 'เพศ'
+  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl'
 ];
 
 function ensureHeader_(sheet) {
