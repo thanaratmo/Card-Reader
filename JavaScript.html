@@ -274,12 +274,13 @@
       sb.scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
-    // สั่งบันทึกลง Sheet แบบ async (ไม่บล็อกการพิมพ์) — ข้ามถ้าบันทึกชุดนี้ไปแล้ว/กำลังบันทึก
+    // สั่งบันทึกลง Sheet แบบ async — ข้ามถ้าบันทึกชุดนี้ไปแล้ว/กำลังบันทึก
     if(!state.saving && state.lastSavedKey!==currentKey()){
       saveSheet();
     }
-    // พิมพ์ทันทีในคลิกเดียว (ต้องอยู่ใน user gesture เบราว์เซอร์ถึงเปิดหน้าต่างพิมพ์)
-    window.print();
+    // หน่วงเล็กน้อยให้คำสั่งบันทึก (google.script.run ข้าม iframe) ถูกส่งออกก่อน
+    // แล้วค่อยเปิดหน้าต่างพิมพ์ (window.print บล็อกหน้าจอ จึงต้องส่งบันทึกให้ทันก่อน)
+    setTimeout(function(){ window.print(); }, 500);
   }
 
   // ---------- slip upload ----------
