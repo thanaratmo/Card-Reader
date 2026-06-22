@@ -9,7 +9,7 @@
 
   var state = {
     bookNo:'1', docNo:'', date: todayISO(),
-    receiverName:'', receiverId:'', dob:'',
+    receiverName:'', receiverId:'', dob:'', gender:'',
     addr:{houseNo:'', moo:'', village:'', soi:'', road:'', subdistrict:'', district:'', province:'', postal:''},
     membershipPeriod:'lifetime', payMethod:'cash',
     signerName:'', signerPosition:'เจ้าหน้าที่ทะเบียนพรรคประชาชน',
@@ -68,6 +68,14 @@
     for(var i=0;i<has.length;i++){ if(v.indexOf(has[i])===0) return v; }
     return add+v;
   }
+  // เพศจากคำนำหน้าชื่อ: นาย→ชาย, นาง/น.ส.→หญิง
+  function genderFromName(name){
+    var n=String(name||'').trim();
+    if(/^(นางสาว|น\.ส\.|นาง|เด็กหญิง|ด\.ญ\.)/.test(n)) return 'หญิง';
+    if(/^(นาย|เด็กชาย|ด\.ช\.)/.test(n)) return 'ชาย';
+    return '';
+  }
+
   function buildAddr(a){
     var isBKK=(a.province||'').trim().indexOf('กรุงเทพ')===0;
     var segs=[];
@@ -270,7 +278,7 @@
     var dob=parseDob(state.dob);
     var payload={
       docNo:state.docNo, bookNo:state.bookNo, date:state.date,
-      receiverName:state.receiverName, receiverId:state.receiverId,
+      receiverName:state.receiverName, receiverId:state.receiverId, gender:state.gender,
       dobDay:dob.d, dobMonth:dob.m, dobYear:dob.y,
       houseNo:a.houseNo, moo:a.moo, village:a.village, soi:a.soi, road:a.road,
       subdistrict:a.subdistrict, district:a.district, province:a.province, postal:a.postal,
@@ -302,11 +310,11 @@
       .withSuccessHandler(function(docNo){ state.docNo=docNo; $('docNo').value=docNo; })
       .withFailureHandler(function(){ /* keep old */ })
       .getNextDocNo();
-    state.receiverName=''; state.receiverId=''; state.dob='';
+    state.receiverName=''; state.receiverId=''; state.dob=''; state.gender='';
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
     state._autoPostal=null;
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
-    ['receiverName','receiverId','dob','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
+    ['receiverName','receiverId','gender','dob','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
     clearSlip();
     render();
     toast('เริ่มเอกสารใหม่');
@@ -413,7 +421,13 @@
     $('bookNo').oninput=function(){ state.bookNo=this.value; $('rBookNo').textContent=this.value; };
     $('docNo').oninput =function(){ state.docNo=this.value; $('rDocNo').textContent=this.value; };
     $('date').oninput  =function(){ state.date=this.value; $('rDate').textContent=thaiDate(this.value); };
-    $('receiverName').oninput=function(){ state.receiverName=this.value; $('rName').textContent=this.value||'..........................................'; };
+    $('receiverName').oninput=function(){
+      state.receiverName=this.value;
+      $('rName').textContent=this.value||'..........................................';
+      var g=genderFromName(this.value);     // เติมเพศอัตโนมัติจากคำนำหน้า
+      if(g){ state.gender=g; $('gender').value=g; }
+    };
+    $('gender').oninput=function(){ state.gender=this.value; };
     $('receiverId').oninput=function(){
       var v=this.value.replace(/\D/g,'').slice(0,13);
       this.value=v; state.receiverId=v; $('rId').textContent=v||'..........................';
@@ -523,6 +537,7 @@
     state.receiverName = d.fullName || '';
     state.receiverId   = (d.cid||'').replace(/\D/g,'').slice(0,13);
     state.dob          = d.dob || '';
+    state.gender       = d.gender || genderFromName(d.fullName) || '';
     var a = d.address || {};
     state.addr = {
       houseNo:     a.houseNo     || '',
@@ -538,6 +553,7 @@
     // sync DOM inputs
     $('receiverName').value = state.receiverName;
     $('receiverId').value   = state.receiverId;
+    $('gender').value       = state.gender;
     $('dob').value          = state.dob;
     $('addrHouseNo').value  = state.addr.houseNo;
     $('addrMoo').value      = state.addr.moo;
