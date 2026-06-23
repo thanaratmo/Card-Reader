@@ -303,8 +303,19 @@
     return [state.docNo, state.receiverName, total(), JSON.stringify(state.items)].join('|');
   }
 
+  // แปลงวันเกิดดิบจากบัตร "25380918" (พ.ศ.+เดือน+วัน) -> "18 กันยายน 2538"
+  function formatThaiDob(raw){
+    var s=String(raw||'').replace(/\D/g,'');
+    if(s.length===8){
+      var y=+s.slice(0,4), m=+s.slice(4,6), d=+s.slice(6,8);
+      if(m>=1 && m<=12 && d>=1 && d<=31) return d+' '+thMonths[m-1]+' '+y;
+    }
+    return String(raw||'');
+  }
+
   // แยกวันเดือนปีเกิด: "4 พฤศจิกายน 2541" -> {d:'4', m:'พฤศจิกายน', y:'2541'}
   function parseDob(s){
+    s=formatThaiDob(s);   // เผื่อยังเป็นรูปแบบดิบ 8 หลัก
     s=String(s||'').trim();
     if(!s) return {d:'', m:'', y:''};
     var thMonths=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -592,7 +603,7 @@
 
   function applyCardData(d){
     state.receiverId   = (d.cid||'').replace(/\D/g,'').slice(0,13);
-    state.dob          = d.dob || '';
+    state.dob          = formatThaiDob(d.dob || '');
     // แยกชื่อ + คำนำหน้า (ใส่คำนำหน้าไว้ในช่องชื่อ เช่น "นายธนะรัช")
     var s=splitName(d.fullName);
     var title=normTitle(d.title||'') || s.title || '';
