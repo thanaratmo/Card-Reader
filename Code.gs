@@ -143,9 +143,11 @@ function saveRow(payload) {
     payload.membershipPeriod || '',  // Z
     payload.signerName       || '',  // AA
     payload.signerPosition   || '',  // AB
-    email,                        // AC savedBy
-    slipNote,                     // AD slip
-    slipUrlCell                   // AE slipUrl
+    email,                        // savedBy
+    slipNote,                     // slip
+    slipUrlCell,                  // slipUrl
+    payload.phone   || '',        // เบอร์โทร
+    payload.regAddr || ''         // มีที่อยู่ตามทะเบียนบ้าน
   ]);
 
   return { ok: true, savedAt: now.toISOString() };
@@ -231,7 +233,8 @@ var HEADERS = [
   'houseNo', 'moo', 'village', 'soi', 'road',          // N O P Q R
   'subdistrict', 'district', 'province', 'postal',     // S T U V
   'items', 'total', 'payMethod', 'membershipPeriod',
-  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl'
+  'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl',
+  'เบอร์โทร', 'มีที่อยู่ตามทะเบียนบ้าน'
 ];
 
 function ensureHeader_(sheet) {
