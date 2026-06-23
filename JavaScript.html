@@ -333,8 +333,9 @@
   }
 
   function saveSheet(onDone){
-    if(state.saving){ return; }
-    state.saving=true;
+    // กันบันทึกซ้ำเฉพาะข้อมูล "ชุดเดียวกันเป๊ะ" (กดพิมพ์ซ้ำใบเดิม)
+    if(state.lastSavedKey===currentKey()){ if(typeof onDone==='function') onDone(true); return; }
+    state.lastSavedKey=currentKey();   // มาร์กทันที กันกดรัวๆ ซ้ำ
 
     var a=state.addr;
     var dob=parseDob(state.dob);
@@ -357,14 +358,12 @@
 
     google.script.run
       .withSuccessHandler(function(){
-        state.saving=false;
-        state.lastSavedKey=currentKey();
         toast('บันทึกลง Google Sheet เรียบร้อย');
         google.script.run.withSuccessHandler(renderHistory).getRecentRows(8);
         if(typeof onDone==='function') onDone(true);
       })
       .withFailureHandler(function(err){
-        state.saving=false;
+        state.lastSavedKey=null;   // บันทึกไม่สำเร็จ → ให้ลองพิมพ์ใหม่ได้
         toast('บันทึกไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
         if(typeof onDone==='function') onDone(false);
       })
@@ -380,6 +379,7 @@
     state.receiverId=''; state.dob=''; state.gender=''; state.phone=''; state.regAddr='ใช่';
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
     state._autoPostal=null;
+    state.lastSavedKey=null; state._savePending=false;
     state.items=[{desc:'ค่าบำรุงพรรคการเมือง ('+(state.membershipPeriod==='yearly'?'รายปี':'ตลอดชีพ')+')',amount:''}];
     ['firstName','middleName','lastName','receiverId','gender','dob','phone','addrHouseNo','addrMoo','addrVillage','addrSoi','addrRoad','addrSub','addrDistrict','addrProvince','addrPostal'].forEach(function(id){ $(id).value=''; });
     refreshName();
@@ -428,8 +428,8 @@
     // ถ้าสลิปยังอัปโหลดไม่เสร็จ → พิมพ์ได้เลย แล้วค่อยบันทึกอัตโนมัติเมื่ออัปโหลดเสร็จ
     if(state.payMethod==='transfer' && state.slip.uploading){
       state._savePending=true;
-    } else if(!state.saving && state.lastSavedKey!==currentKey()){
-      saveSheet();
+    } else {
+      saveSheet();   // กันซ้ำภายในแล้ว
     }
     // หน่วงเล็กน้อยให้คำสั่งบันทึกถูกส่งออกก่อน แล้วค่อยเปิดหน้าต่างพิมพ์
     setTimeout(function(){ window.print(); }, 500);
