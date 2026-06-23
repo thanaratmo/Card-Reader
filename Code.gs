@@ -234,7 +234,7 @@ var HEADERS = [
   'subdistrict', 'district', 'province', 'postal',     // S T U V
   'items', 'total', 'payMethod', 'membershipPeriod',
   'signerName', 'signerPosition', 'savedBy', 'slip', 'slipUrl',
-  'เบอร์โทร', 'มีที่อยู่ตามทะเบียนบ้าน'
+  'เบอร์โทร', 'ที่อยู่ปัจจุบันตรงกับทะเบียนบ้าน'
 ];
 
 function ensureHeader_(sheet) {
