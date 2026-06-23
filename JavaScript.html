@@ -88,24 +88,24 @@
     if(t==='ด.ญ.') return 'เด็กหญิง';
     return t;
   }
-  // คำนำหน้าที่รู้จัก (เรียงยาวก่อนสั้น)
-  var TITLES=['นางสาว','น.ส.','เด็กชาย','เด็กหญิง','ด.ช.','ด.ญ.','นาย','นาง'];
+  // คำนำหน้าพื้นฐาน (มีเพศ) + รายการยศจากไฟล์ Excel (window.RANKS)
+  var BASIC_TITLES=['นางสาว','น.ส.','เด็กชาย','เด็กหญิง','ด.ช.','ด.ญ.','นาย','นาง'];
+  function allTitles(){ return BASIC_TITLES.concat(window.RANKS||[]); }
+  // จับคำนำหน้า/ยศ ที่นำหน้าชื่อ (เลือกตัวที่ยาวที่สุด เช่น "จ่าสิบตำรวจ")
+  function detectTitle(s){
+    var n=String(s||'').trim(), best='', list=allTitles();
+    for(var i=0;i<list.length;i++){ var t=list[i]; if(t && n.indexOf(t)===0 && t.length>best.length) best=t; }
+    return best;
+  }
   function stripTitle(s){
-    var n=String(s||'').trim();
-    for(var i=0;i<TITLES.length;i++){ if(n.indexOf(TITLES[i])===0) return n.slice(TITLES[i].length).trim(); }
-    return n;
+    var n=String(s||'').trim(), t=detectTitle(n);
+    return t ? n.slice(t.length).trim() : n;
   }
-  // ดึงคำนำหน้าที่นำหน้าชื่อ (เช่น "นายธนะรัช" -> "นาย")
-  function getTitle(s){
-    var n=String(s||'').trim();
-    for(var i=0;i<TITLES.length;i++){ if(n.indexOf(TITLES[i])===0) return normTitle(TITLES[i]); }
-    return '';
-  }
-  // เพศจากคำนำหน้าที่นำหน้าชื่อ: นาย/เด็กชาย→ชาย, นาง/น.ส./เด็กหญิง→หญิง
-  function genderFromName(s){
-    var n=String(s||'').trim();
-    if(/^(นางสาว|น\.ส\.|นาง|เด็กหญิง|ด\.ญ\.)/.test(n)) return 'หญิง';
-    if(/^(นาย|เด็กชาย|ด\.ช\.)/.test(n)) return 'ชาย';
+  function getTitle(s){ return normTitle(detectTitle(s)); }
+  // เพศ: เฉพาะคำนำหน้าพื้นฐานเท่านั้น (ยศ → เว้นว่าง)
+  function genderFromTitleExact(t){
+    if(t==='นาย'||t==='เด็กชาย') return 'ชาย';
+    if(t==='นาง'||t==='น.ส.'||t==='นางสาว'||t==='เด็กหญิง') return 'หญิง';
     return '';
   }
   // ชื่อเต็ม "ไม่มีคำนำหน้า" สำหรับบันทึกลงชีต
@@ -492,8 +492,8 @@
     $('gender').oninput=function(){ state.gender=this.value; };
     $('firstName').oninput =function(){
       state.firstName=this.value;
-      var g=genderFromName(this.value);     // เพศตามคำนำหน้าที่พิมพ์ในช่องชื่อ
-      if(g){ state.gender=g; $('gender').value=g; }
+      var t=getTitle(this.value);           // จับคำนำหน้า/ยศ
+      if(t){ var g=genderFromTitleExact(t); state.gender=g; $('gender').value=g; }  // ยศ → เพศว่าง
       refreshName();
     };
     $('middleName').oninput=function(){ state.middleName=this.value; refreshName(); };
@@ -618,7 +618,7 @@
     state.firstName  = (title + first).trim();
     state.middleName = s.middle || '';
     state.lastName   = d.lastName || s.last || '';
-    state.gender     = d.gender || genderFromName(state.firstName) || '';
+    state.gender     = genderFromTitleExact(getTitle(state.firstName));   // ยศ → เว้นเพศ (ไม่ใช้เพศจากบัตร)
     var a = d.address || {};
     state.addr = {
       houseNo:     a.houseNo     || '',
