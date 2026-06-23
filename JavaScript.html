@@ -298,9 +298,15 @@
   }
 
   // ---------- actions ----------
-  // ลายเซ็นของเอกสารปัจจุบัน — ใช้กันบันทึกซ้ำ
+  // ลายเซ็นของเอกสารปัจจุบัน — ใช้กันบันทึกซ้ำ (รวมทุกฟิลด์ที่บันทึก)
   function currentKey(){
-    return [state.docNo, state.receiverName, total(), JSON.stringify(state.items)].join('|');
+    return JSON.stringify([
+      state.docNo, state.firstName, state.middleName, state.lastName,
+      state.receiverId, state.dob, state.gender, state.phone, state.regAddr,
+      state.addr, total(), state.items,
+      state.payMethod, state.membershipPeriod, state.signerName, state.signerPosition,
+      state.slip.url
+    ]);
   }
 
   // แปลงวันเกิดดิบจากบัตร "25380918" (พ.ศ.+เดือน+วัน) -> "18 กันยายน 2538"
@@ -497,6 +503,7 @@
       this.value=v; state.receiverId=v; $('rId').textContent=v||'..........................';
     };
     $('dob').oninput=function(){ state.dob=this.value; };
+    $('dob').onchange=function(){ var f=formatThaiDob(this.value); this.value=f; state.dob=f; };
     var addrMap={addrHouseNo:'houseNo',addrMoo:'moo',addrVillage:'village',addrSoi:'soi',addrRoad:'road',addrSub:'subdistrict',addrDistrict:'district',addrProvince:'province',addrPostal:'postal'};
     Object.keys(addrMap).forEach(function(id){
       $(id).oninput=function(){
