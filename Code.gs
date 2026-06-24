@@ -79,6 +79,17 @@ function assignDocNo_() {
   return fmtDocNo_(n);
 }
 
+// ขยับตัวนับให้ตามเลขที่กรอกเอง (กัน auto ออกเลขชนกับเลขที่กรอกเอง)
+function bumpDocSeq_(docNo) {
+  var m = String(docNo).match(/(\d+)\s*$/);
+  if (!m) return;
+  var seq = parseInt(m[1], 10);
+  var props = PropertiesService.getScriptProperties();
+  var cur = props.getProperty(DOC_SEQ_KEY);
+  var curN = (cur === null) ? docSeqBase_() : parseInt(cur, 10);
+  if (seq > curN) props.setProperty(DOC_SEQ_KEY, String(seq));
+}
+
 // แสดงเลข "ตัวอย่าง" ตอนเปิดฟอร์ม — ไม่กินเลข (เลขจริงออกตอนบันทึก)
 function getNextDocNo() {
   checkAccess_();
@@ -124,7 +135,14 @@ function saveRow(payload) {
     var sheet = getSheet_();
     ensureHeader_(sheet);
 
-    var docNo = assignDocNo_();   // เลขจริง ออกตอนนี้เท่านั้น
+    // ปกติ auto-assign; ถ้าผู้ใช้กดแก้ไขเลขเอง → ใช้เลขนั้นแล้วขยับตัวนับกันชน
+    var docNo;
+    if (payload.docNoManual && payload.docNo) {
+      docNo = String(payload.docNo);
+      bumpDocSeq_(docNo);
+    } else {
+      docNo = assignDocNo_();
+    }
     var now = new Date();
 
     // สลิปถูกอัปโหลดขึ้น Drive ตั้งแต่ตอนแนบรูปแล้ว (ดู uploadSlip) — ที่นี่ใช้แค่ลิงก์

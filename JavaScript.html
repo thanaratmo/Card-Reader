@@ -8,7 +8,7 @@
   function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
   var state = {
-    bookNo:'1', docNo:'', date: todayISO(),
+    bookNo:'1', docNo:'', docNoManual:false, date: todayISO(),
     receiverName:'', firstName:'', middleName:'', lastName:'',
     receiverId:'', dob:'', gender:'', phone:'', regAddr:'ใช่',
     addr:{houseNo:'', moo:'', village:'', soi:'', road:'', subdistrict:'', district:'', province:'', postal:''},
@@ -341,7 +341,7 @@
     var a=state.addr;
     var dob=parseDob(state.dob);
     var payload={
-      docNo:state.docNo, bookNo:state.bookNo, date:state.date,
+      docNo:state.docNo, docNoManual:state.docNoManual, bookNo:state.bookNo, date:state.date,
       receiverName:fullNameNoTitle(),
       title:getTitle(state.firstName),
       firstName:stripTitle(state.firstName), middleName:state.middleName, lastName:state.lastName,
@@ -375,9 +375,13 @@
 
   function newDoc(){
     google.script.run
-      .withSuccessHandler(function(docNo){ state.docNo=docNo; $('docNo').value=docNo; })
+      .withSuccessHandler(function(docNo){ state.docNo=docNo; $('docNo').value=docNo; $('rDocNo').textContent=docNo; })
       .withFailureHandler(function(){ /* keep old */ })
       .getNextDocNo();
+    // ล็อกช่องเลขเอกสารกลับ + เลิกโหมดแก้ไขเอง
+    state.docNoManual=false;
+    var dinp=$('docNo'); dinp.setAttribute('readonly','readonly'); dinp.style.background='#F4F5F7'; dinp.style.color='#6B7585';
+    var deb=$('btnEditDocNo'); deb.textContent='แก้ไข'; deb.classList.remove('editing');
     state.receiverName=''; state.firstName=''; state.middleName=''; state.lastName='';
     state.receiverId=''; state.dob=''; state.gender=''; state.phone=''; state.regAddr='ใช่';
     state.addr={houseNo:'',moo:'',village:'',soi:'',road:'',subdistrict:'',district:'',province:'',postal:''};
@@ -497,6 +501,18 @@
   function bind(){
     $('bookNo').oninput=function(){ state.bookNo=this.value; $('rBookNo').textContent=this.value; };
     $('docNo').oninput =function(){ state.docNo=this.value; $('rDocNo').textContent=this.value; };
+    $('btnEditDocNo').onclick=function(){
+      var inp=$('docNo'), editing=!inp.hasAttribute('readonly');
+      if(!editing){
+        inp.removeAttribute('readonly'); inp.style.background='#fff'; inp.style.color='#1C2530';
+        inp.focus(); inp.select();
+        this.textContent='เสร็จ'; this.classList.add('editing');
+        state.docNoManual=true;   // ใช้เลขที่กรอกเอง
+      } else {
+        inp.setAttribute('readonly','readonly'); inp.style.background='#F4F5F7'; inp.style.color='#6B7585';
+        this.textContent='แก้ไข'; this.classList.remove('editing');
+      }
+    };
     $('date').oninput  =function(){ state.date=this.value; $('rDate').textContent=thaiDate(this.value); };
     $('gender').oninput=function(){ state.gender=this.value; };
     $('firstName').oninput =function(){
