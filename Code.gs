@@ -59,18 +59,29 @@ function getInitData() {
 // ------------------------------------------------------------
 function getNextDocNo() {
   checkAccess_();
-  var sheet = getSheet_();
-  var lastRow = sheet.getLastRow();
-  // แถวแรกเป็น header → running number = lastRow (เริ่มที่ 1 เมื่อยังไม่มีข้อมูล)
-  var runNum = Math.max(lastRow, 1);
+  // จองเลขแบบ atomic — ต่อให้หลายคนกดพร้อมกัน ก็ได้เลขไล่ลำดับไม่ซ้ำ
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var cur = props.getProperty('docSeq');
+    var n;
+    if (cur === null) {
+      n = Math.max(getSheet_().getLastRow(), 1);   // เริ่มต่อจากข้อมูลเดิม
+    } else {
+      n = parseInt(cur, 10) + 1;
+    }
+    props.setProperty('docSeq', String(n));
 
-  var now = new Date();
-  var be  = now.getFullYear() + 543;
-  var yy  = String(be).slice(-2);
-  var mm  = String(now.getMonth() + 1).padStart(2, '0');
-  var seq = String(runNum).padStart(5, '0');
-
-  return 'PPLE' + yy + '/' + mm + '/' + seq;
+    var now = new Date();
+    var be  = now.getFullYear() + 543;
+    var yy  = String(be).slice(-2);
+    var mm  = String(now.getMonth() + 1).padStart(2, '0');
+    var seq = String(n).padStart(5, '0');
+    return 'PPLE' + yy + '/' + mm + '/' + seq;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ------------------------------------------------------------
@@ -258,6 +269,7 @@ function setupSheet() {
   removeImages_(sheet);
   sheet.clear();
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  PropertiesService.getScriptProperties().deleteProperty('docSeq');   // เริ่มนับเลขเอกสารใหม่
   return 'reset done — ' + HEADERS.length + ' columns';
 }
 
