@@ -12,9 +12,11 @@ var SLIP_FOLDER_ID = '1TU3rNtADOUPVSaK73nHifD4Kv1TH3J7T';  // โฟลเดอ
 // Access control
 // ------------------------------------------------------------
 function checkAccess_() {
+  // deployment ตั้ง access=DOMAIN → Google จำกัดเฉพาะ @peoplesparty.or.th อยู่แล้ว
+  // executeAs=Me ทำให้ getActiveUser อาจคืนค่าว่างได้ จึงไม่บล็อกเมื่อว่าง
   var email = Session.getActiveUser().getEmail();
-  if (!email || !email.endsWith('@' + ALLOWED_DOMAIN)) {
-    throw new Error('Access denied: กรุณาล็อกอินด้วยบัญชี @' + ALLOWED_DOMAIN);
+  if (email && email.indexOf('@' + ALLOWED_DOMAIN) === -1) {
+    throw new Error('Access denied: กรุณาใช้บัญชี @' + ALLOWED_DOMAIN);
   }
   return email;
 }
