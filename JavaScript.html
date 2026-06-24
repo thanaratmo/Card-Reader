@@ -300,8 +300,9 @@
   // ---------- actions ----------
   // ลายเซ็นของเอกสารปัจจุบัน — ใช้กันบันทึกซ้ำ (รวมทุกฟิลด์ที่บันทึก)
   function currentKey(){
+    // ไม่รวม docNo (เลขจริงออกตอนบันทึก) — ใช้เนื้อหากันบันทึกซ้ำใบเดิม
     return JSON.stringify([
-      state.docNo, state.firstName, state.middleName, state.lastName,
+      state.firstName, state.middleName, state.lastName,
       state.receiverId, state.dob, state.gender, state.phone, state.regAddr,
       state.addr, total(), state.items,
       state.payMethod, state.membershipPeriod, state.signerName, state.signerPosition,
@@ -357,10 +358,12 @@
     };
 
     google.script.run
-      .withSuccessHandler(function(){
+      .withSuccessHandler(function(res){
+        if(res && res.docNo){   // เลขจริงจากเซิร์ฟเวอร์ → อัปเดตบนใบเสร็จ
+          state.docNo=res.docNo; $('docNo').value=res.docNo; $('rDocNo').textContent=res.docNo;
+        }
         toast('บันทึกลง Google Sheet เรียบร้อย');
-        google.script.run.withSuccessHandler(renderHistory).getRecentRows(8);
-        if(typeof onDone==='function') onDone(true);
+        if(typeof onDone==='function') onDone(res||{ok:true});
       })
       .withFailureHandler(function(err){
         state.lastSavedKey=null;   // บันทึกไม่สำเร็จ → ให้ลองพิมพ์ใหม่ได้
@@ -425,14 +428,20 @@
       sb.scrollIntoView({behavior:'smooth', block:'center'});
       return;
     }
-    // ถ้าสลิปยังอัปโหลดไม่เสร็จ → พิมพ์ได้เลย แล้วค่อยบันทึกอัตโนมัติเมื่ออัปโหลดเสร็จ
+    // ถ้าสลิปยังอัปโหลดไม่เสร็จ → รอแล้วค่อยบันทึก+พิมพ์เมื่ออัปโหลดเสร็จ
     if(state.payMethod==='transfer' && state.slip.uploading){
       state._savePending=true;
     } else {
-      saveSheet();   // กันซ้ำภายในแล้ว
+      doSavePrint();
     }
-    // หน่วงเล็กน้อยให้คำสั่งบันทึกถูกส่งออกก่อน แล้วค่อยเปิดหน้าต่างพิมพ์
-    setTimeout(function(){ window.print(); }, 500);
+  }
+
+  // บันทึกก่อน (ได้เลขจริง) แล้วค่อยพิมพ์ — มี fallback กันบันทึกช้า
+  function doSavePrint(){
+    var printed=false;
+    var go=function(){ if(printed) return; printed=true; window.print(); };
+    saveSheet(function(){ go(); });   // พิมพ์ทันทีที่บันทึกเสร็จ (ใบเสร็จได้เลขจริง)
+    setTimeout(go, 3000);             // เผื่อบันทึกช้า → พิมพ์ภายในกรอบเวลาที่เบราว์เซอร์ยอม
   }
 
   // ---------- slip upload ----------
@@ -461,13 +470,13 @@
             state.slip.uploading=false;
             state.slip.url=(res && res.url) ? res.url : '';
             $('slipName').textContent=file.name+' ✓';
-            if(state._savePending){ state._savePending=false; saveSheet(); }   // พิมพ์ไปก่อนแล้ว → บันทึกตอนนี้
+            if(state._savePending){ state._savePending=false; doSavePrint(); }   // พิมพ์ไปก่อนแล้ว → บันทึกตอนนี้
           })
           .withFailureHandler(function(err){
             state.slip.uploading=false; state.slip.url='';
             $('slipName').textContent=file.name+' · อัปโหลดไม่สำเร็จ';
             toast('อัปโหลดสลิปไม่สำเร็จ: '+(err && err.message ? err.message : err), true);
-            if(state._savePending){ state._savePending=false; saveSheet(); }   // บันทึกแถวไว้ (ไม่มีลิงก์สลิป)
+            if(state._savePending){ state._savePending=false; doSavePrint(); }   // บันทึกแถวไว้ (ไม่มีลิงก์สลิป)
           })
           .uploadSlip(dataUrl, state.receiverId, state.docNo);
       };

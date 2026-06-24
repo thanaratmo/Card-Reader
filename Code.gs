@@ -57,31 +57,34 @@ function getInitData() {
 // ------------------------------------------------------------
 // getNextDocNo — สร้างเลขเอกสารต่อเนื่องจาก Sheet
 // ------------------------------------------------------------
+var DOC_SEQ_KEY = 'docSeqV2';   // ตัวนับใหม่ (เลขเดินเฉพาะตอนบันทึกจริง)
+
+function docSeqBase_() {
+  // จำนวนแถวข้อมูลปัจจุบัน (ไม่รวม header) — ใช้เริ่มต้นตัวนับ
+  return Math.max(getSheet_().getLastRow() - 1, 0);
+}
+function fmtDocNo_(n) {
+  var now = new Date();
+  var yy  = String(now.getFullYear() + 543).slice(-2);
+  var mm  = String(now.getMonth() + 1).padStart(2, '0');
+  return 'PPLE' + yy + '/' + mm + '/' + String(n).padStart(5, '0');
+}
+
+// กำหนดเลขจริง (เพิ่มตัวนับ) — เรียกใน saveRow ใต้ lock เท่านั้น
+function assignDocNo_() {
+  var props = PropertiesService.getScriptProperties();
+  var cur = props.getProperty(DOC_SEQ_KEY);
+  var n = (cur === null) ? (docSeqBase_() + 1) : (parseInt(cur, 10) + 1);
+  props.setProperty(DOC_SEQ_KEY, String(n));
+  return fmtDocNo_(n);
+}
+
+// แสดงเลข "ตัวอย่าง" ตอนเปิดฟอร์ม — ไม่กินเลข (เลขจริงออกตอนบันทึก)
 function getNextDocNo() {
   checkAccess_();
-  // จองเลขแบบ atomic — ต่อให้หลายคนกดพร้อมกัน ก็ได้เลขไล่ลำดับไม่ซ้ำ
-  var lock = LockService.getScriptLock();
-  lock.waitLock(15000);
-  try {
-    var props = PropertiesService.getScriptProperties();
-    var cur = props.getProperty('docSeq');
-    var n;
-    if (cur === null) {
-      n = Math.max(getSheet_().getLastRow(), 1);   // เริ่มต่อจากข้อมูลเดิม
-    } else {
-      n = parseInt(cur, 10) + 1;
-    }
-    props.setProperty('docSeq', String(n));
-
-    var now = new Date();
-    var be  = now.getFullYear() + 543;
-    var yy  = String(be).slice(-2);
-    var mm  = String(now.getMonth() + 1).padStart(2, '0');
-    var seq = String(n).padStart(5, '0');
-    return 'PPLE' + yy + '/' + mm + '/' + seq;
-  } finally {
-    lock.releaseLock();
-  }
+  var cur = PropertiesService.getScriptProperties().getProperty(DOC_SEQ_KEY);
+  var n = (cur === null) ? (docSeqBase_() + 1) : (parseInt(cur, 10) + 1);
+  return fmtDocNo_(n);
 }
 
 // ------------------------------------------------------------
@@ -114,21 +117,26 @@ function uploadSlip(dataUrl, cid, docNo) {
 
 function saveRow(payload) {
   var email = checkAccess_();
-  var sheet = getSheet_();
-  ensureHeader_(sheet);
+  // ล็อกให้บันทึกทีละคน → กำหนดเลขเอกสารแบบ atomic ตอนบันทึกจริง (ไม่กินเลขตอนเปิดฟอร์ม)
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = getSheet_();
+    ensureHeader_(sheet);
 
-  var now = new Date();
+    var docNo = assignDocNo_();   // เลขจริง ออกตอนนี้เท่านั้น
+    var now = new Date();
 
-  // สลิปถูกอัปโหลดขึ้น Drive ตั้งแต่ตอนแนบรูปแล้ว (ดู uploadSlip) — ที่นี่ใช้แค่ลิงก์
-  var slipUrlCell = '', slipNote = '';
-  if (payload.slipUrl) {
-    slipNote = 'แนบสลิปแล้ว';
-    slipUrlCell = '=HYPERLINK("' + payload.slipUrl + '","ดูสลิป")';
-  }
+    // สลิปถูกอัปโหลดขึ้น Drive ตั้งแต่ตอนแนบรูปแล้ว (ดู uploadSlip) — ที่นี่ใช้แค่ลิงก์
+    var slipUrlCell = '', slipNote = '';
+    if (payload.slipUrl) {
+      slipNote = 'แนบสลิปแล้ว';
+      slipUrlCell = '=HYPERLINK("' + payload.slipUrl + '","ดูสลิป")';
+    }
 
   sheet.appendRow([
     now,                          // A timestamp
-    payload.docNo        || '',   // B docNo
+    docNo,                        // B docNo (กำหนดที่เซิร์ฟเวอร์)
     payload.bookNo       || '',   // C bookNo
     payload.date         || '',   // D date
     payload.receiverName || '',   // E ชื่อเต็ม (ไม่มีคำนำหน้า)
@@ -163,7 +171,10 @@ function saveRow(payload) {
     payload.regAddr || ''         // มีที่อยู่ตามทะเบียนบ้าน
   ]);
 
-  return { ok: true, savedAt: now.toISOString() };
+    return { ok: true, docNo: docNo, savedAt: now.toISOString() };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ------------------------------------------------------------
@@ -269,7 +280,7 @@ function setupSheet() {
   removeImages_(sheet);
   sheet.clear();
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-  PropertiesService.getScriptProperties().deleteProperty('docSeq');   // เริ่มนับเลขเอกสารใหม่
+  PropertiesService.getScriptProperties().deleteProperty(DOC_SEQ_KEY);   // เริ่มนับเลขเอกสารใหม่
   return 'reset done — ' + HEADERS.length + ' columns';
 }
 
